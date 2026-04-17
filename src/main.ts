@@ -570,9 +570,8 @@ systems. For symmetric systems, longer keys are sufficient.</p>
     </section>
   </div>
 
-  <footer>
-    <p>\u201CWhether therefore ye eat, or drink, or whatsoever ye do,
-    do all to the glory of God.\u201D \u2014 1 Corinthians 10:31</p>
+  <footer class="scripture-footer">
+    <p>So whether you eat or drink or whatever you do, do it all for the glory of God. — 1 Corinthians 10:31</p>
   </footer>
 </main>`;
 }
