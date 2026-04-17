@@ -59,6 +59,7 @@ nSlider.addEventListener('input', () => {
   n = parseInt(nSlider.value, 10);
   N = 2 ** n;
   targetIndex = cryptoRandomBelow(N);
+  nSlider.setAttribute('aria-valuenow', String(n));
   resetState();
 });
 
@@ -428,18 +429,18 @@ Circuit depth: 2^${cost.circuitDepthExponent}</div>
   }).join('');
 
   return `
+<a href="#panel-a" class="skip-link">Skip to main content</a>
 <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark/light theme">\u{1F319}</button>
 
-<div class="app">
-  <h1>Grover's Algorithm &mdash; Amplitude Amplification</h1>
+<main class="app">
 
   <!-- Panel A: Amplitude Visualizer -->
-  <div class="panel" id="panel-a">
-    <div class="panel-header">Grover's Algorithm &mdash; Amplitude Amplification</div>
+  <section class="panel" id="panel-a" aria-labelledby="panel-a-heading">
+    <h1 id="panel-a-heading" class="panel-header">Grover's Algorithm &mdash; Amplitude Amplification</h1>
 
     <div class="controls">
-      <label>Search space n qubits:</label>
-      <input type="range" id="n-slider" min="2" max="20" value="4">
+      <label for="n-slider">Search space n qubits:</label>
+      <input type="range" id="n-slider" min="2" max="20" value="4" aria-valuemin="2" aria-valuemax="20" aria-valuenow="4">
       <span class="value" id="n-value">N = 2^4 = 16</span>
     </div>
 
@@ -480,13 +481,13 @@ Grover does not see inside it.</div>
 
     <!-- WCAG: polite live region for screen readers -->
     <div id="live-region" aria-live="polite" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden"></div>
-  </div>
+  </section>
 
   <!-- Bottom panels -->
   <div class="bottom-panels">
     <!-- Panel B: Race -->
-    <div class="panel" id="panel-b">
-      <div class="panel-header">Classical vs Quantum Search</div>
+    <section class="panel" id="panel-b" aria-labelledby="panel-b-heading">
+      <h2 id="panel-b-heading" class="panel-header">Classical vs Quantum Search</h2>
       <div class="race-columns">
         <div class="race-col">
           <h3>Classical Search</h3>
@@ -500,14 +501,15 @@ Grover does not see inside it.</div>
         </div>
       </div>
       <table class="speedup-table">
+        <caption class="sr-only">Quantum speedup scaling by search space size</caption>
         <thead><tr><th>n</th><th>Speedup</th><th>Scale</th></tr></thead>
         <tbody id="speedup-body"></tbody>
       </table>
-    </div>
+    </section>
 
     <!-- Panel C: AES & Hash Impact -->
-    <div class="panel" id="panel-c">
-      <div class="panel-header">Impact on Symmetric Cryptography</div>
+    <section class="panel" id="panel-c" aria-labelledby="panel-c-heading">
+      <h2 id="panel-c-heading" class="panel-header">Impact on Symmetric Cryptography</h2>
 
       <div class="aes-cards">${aesCards}</div>
 
@@ -522,6 +524,7 @@ Source: NIST/ETSI practical cost estimates for Grover on AES (2024)</div>
 
       <div class="hash-table-wrap">
         <table class="hash-table">
+          <caption class="sr-only">Hash function quantum impact analysis</caption>
           <thead><tr>
             <th>Hash</th><th>Output Bits</th>
             <th>Classical Preimage</th><th>Quantum Preimage (Grover)</th>
@@ -546,7 +549,8 @@ systems. For symmetric systems, longer keys are sufficient.</p>
       <details>
         <summary>Grover vs Shor \u2014 The Two Quantum Threats</summary>
         <table class="compare-table">
-          <thead><tr><th></th><th>Grover</th><th>Shor</th></tr></thead>
+          <caption class="sr-only">Comparison of Grover and Shor quantum algorithms</caption>
+          <thead><tr><th scope="col"></th><th scope="col">Grover</th><th scope="col">Shor</th></tr></thead>
           <tbody>
             <tr><td>Targets</td><td>Symmetric crypto</td><td>Public-key crypto</td></tr>
             <tr><td>Speedup</td><td>Quadratic (\u221AN)</td><td>Exponential (poly)</td></tr>
@@ -559,14 +563,14 @@ systems. For symmetric systems, longer keys are sufficient.</p>
         </table>
         <p style="margin-top:.75rem;font-family:var(--mono);font-size:.72rem;color:var(--text-dim)">Grover is the lesser threat. Shor is the existential one. Both must be addressed, but they require different responses.</p>
       </details>
-    </div>
+    </section>
   </div>
 
   <footer>
     <p>\u201CWhether therefore ye eat, or drink, or whatsoever ye do,
     do all to the glory of God.\u201D \u2014 1 Corinthians 10:31</p>
   </footer>
-</div>`;
+</main>`;
 }
 
 /* ── Theme toggle ──────────────────────────────────────── */
