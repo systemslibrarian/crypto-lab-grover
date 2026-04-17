@@ -1,5 +1,5 @@
 import './style.css';
-import { computeGroverState, groverProbabilityCurve, groverQueryCount, type GroverState } from './grover.ts';
+import { simulateGroverState, simulateProbabilityCurve, groverQueryCount, type GroverState } from './grover.ts';
 import { analyzeKeySize, aesQuantumCost, analyzeHashFunction } from './aes-impact.ts';
 
 /* ── Helpers ───────────────────────────────────────────── */
@@ -71,7 +71,7 @@ randomBtn.addEventListener('click', () => {
 });
 
 stepBtn.addEventListener('click', () => {
-  const state = computeGroverState(n, targetIndex, currentK);
+  const state = simulateGroverState(n, targetIndex, currentK);
   const maxK = 2 * state.optimalIterations;
   if (currentK < maxK) {
     currentK++;
@@ -90,7 +90,7 @@ autoBtn.addEventListener('click', () => {
   autoBtn.textContent = '\u23F9 Stop';
   autoBtn.classList.add('active');
   autoTimer = window.setInterval(() => {
-    const state = computeGroverState(n, targetIndex, currentK);
+    const state = simulateGroverState(n, targetIndex, currentK);
     const maxK = 2 * state.optimalIterations;
     if (currentK >= maxK) {
       clearInterval(autoTimer!);
@@ -117,7 +117,7 @@ function resetState(): void {
 }
 
 function renderState(): void {
-  const state = computeGroverState(n, targetIndex, currentK);
+  const state = simulateGroverState(n, targetIndex, currentK);
   const kStar = state.optimalIterations;
 
   /* Controls display */
@@ -218,7 +218,7 @@ function fmtAmp(v: number): string {
 
 /* ── Probability curve canvas ──────────────────────────── */
 function renderProbCurve(state: GroverState): void {
-  const curve = groverProbabilityCurve(n);
+  const curve = simulateProbabilityCurve(n);
   const canvas = probCanvas;
   const dpr = window.devicePixelRatio || 1;
   const rect = canvas.getBoundingClientRect();
@@ -286,6 +286,12 @@ function renderProbCurve(state: GroverState): void {
     ctx.beginPath();
     ctx.arc(x(optPt.iteration), y(optPt.probability), 5, 0, Math.PI * 2);
     ctx.fill();
+
+    /* "Optimal stopping point" label */
+    ctx.font = '9px Courier New';
+    ctx.fillStyle = goldColor;
+    ctx.textAlign = 'right';
+    ctx.fillText('Optimal stopping point', x(optPt.iteration) - 8, y(optPt.probability) - 8);
   }
 
   /* Current position dot */
@@ -302,7 +308,7 @@ function renderProbCurve(state: GroverState): void {
     ctx.fillStyle = dimColor;
     ctx.font = '8px Courier New';
     ctx.textAlign = 'left';
-    ctx.fillText('Overshoot: past k* decreases probability', x(kStar) + 8, pad.t + 12);
+    ctx.fillText('Overshoot \u2014 probability decreases', x(kStar) + 8, pad.t + 12);
   }
 
   canvas.setAttribute('aria-label',
@@ -312,7 +318,7 @@ function renderProbCurve(state: GroverState): void {
 
 /* ── Race panel ────────────────────────────────────────── */
 function renderRace(): void {
-  const kStar = computeGroverState(n, targetIndex, 0).optimalIterations;
+  const kStar = simulateGroverState(n, targetIndex, 0).optimalIterations;
   const quantumQueries = groverQueryCount(n);
   const classicalExpected = N / 2;
 
@@ -377,9 +383,58 @@ function renderRace(): void {
   ).join('');
 }
 
+/* ── Signature feature: Why Grover Doesn't Break AES ───── */
+const AES_SIGNATURE_DATA: Record<number, {
+  keyBits: number;
+  classical: string;
+  grover: string;
+  reality: string;
+  explanation: string;
+}> = {
+  128: {
+    keyBits: 128,
+    classical: '2^128',
+    grover: '2^64',
+    reality: 'Potentially feasible for a very large quantum computer, but circuit depth (~2^82 qubit-cycles) makes this far harder than headline numbers suggest.',
+    explanation: `Grover's algorithm reduces brute-force search from 2^128 to ~2^64 operations under idealized assumptions.\n\nWhile this is a major theoretical improvement, it does not represent a practical near-term attack due to:\n• quantum circuit depth (~2^82 logical qubit-cycles per Grassl et al.)\n• oracle construction cost (each iteration runs a full AES-128 circuit coherently)\n• error correction requirements (~2,953 logical qubits needed)\n\nAES-128 is often discussed as having ~64-bit effective brute-force resistance under idealized Grover assumptions. NIST recommends upgrading to AES-256 for post-quantum security.`,
+  },
+  192: {
+    keyBits: 192,
+    classical: '2^192',
+    grover: '2^96',
+    reality: 'Still infeasible — 2^96 idealized operations with deep circuits per iteration.',
+    explanation: `Grover's algorithm reduces brute-force search from 2^192 to ~2^96 operations under idealized assumptions.\n\nWhile 2^96 is significantly smaller than 2^192, it remains well beyond foreseeable quantum capability due to:\n• quantum circuit depth (~2^114 logical qubit-cycles)\n• oracle construction cost (AES-192 circuit is deeper than AES-128)\n• error correction requirements (~4,449 logical qubits needed)\n\nAES-192 retains a strong security margin, though NIST recommends AES-256 for maximum post-quantum assurance.`,
+  },
+  256: {
+    keyBits: 256,
+    classical: '2^256',
+    grover: '2^128',
+    reality: 'Still infeasible — 2^128 operations remains far beyond any foreseeable capability.',
+    explanation: `Grover's algorithm reduces brute-force search from 2^256 to ~2^128 operations under idealized assumptions.\n\nEven with a quadratic speedup, 2^128 operations is an astronomically large number:\n• quantum circuit depth (~2^151 logical qubit-cycles)\n• oracle construction cost (AES-256 has the deepest circuit of all three)\n• error correction requirements (~6,681 logical qubits needed)\n\nAES-256 is recommended by NIST (CNSA 2.0) as the standard for post-quantum symmetric encryption. The 2^128 effective security margin is considered strong for the foreseeable future.`,
+  },
+};
+
+function renderSignatureFeature(): void {
+  const selector = $('#key-selector') as HTMLSelectElement;
+  const keyBits = parseInt(selector.value, 10);
+  const data = AES_SIGNATURE_DATA[keyBits]!;
+
+  const exampleBox = $('#aes-example');
+  exampleBox.innerHTML =
+    `<div class="sig-row"><span class="sig-label">Classical brute force:</span><span class="sig-value">${data.classical}</span></div>` +
+    `<div class="sig-row"><span class="sig-label">Grover (idealized):</span><span class="sig-value magenta">${data.grover}</span></div>` +
+    `<div class="sig-row"><span class="sig-label">Reality:</span><span class="sig-value amber">${data.reality}</span></div>`;
+
+  const explanationBox = $('#aes-explanation');
+  explanationBox.textContent = data.explanation;
+}
+
 /* ── Initial render ────────────────────────────────────── */
 renderState();
 renderRace();
+renderSignatureFeature();
+
+$('#key-selector').addEventListener('change', () => renderSignatureFeature());
 
 /* ── Build HTML ────────────────────────────────────────── */
 function buildHTML(): string {
@@ -432,11 +487,61 @@ Circuit depth: 2^${cost.circuitDepthExponent}</div>
 
   return `
 <a href="#panel-a" class="skip-link">Skip to main content</a>
-<header style="position: relative;">
-  <button class="theme-toggle" id="theme-toggle" style="position: absolute; top: 0; right: 0;" aria-label="Switch to light mode">🌙</button>
+<header class="cl-header">
+  <div class="cl-header-left">
+    <div class="cl-badge">CL</div>
+    <div class="cl-header-text">
+      <span class="cl-title">CRYPTO LAB</span>
+      <a class="cl-sub"
+         href="https://systemslibrarian.dev"
+         target="_blank"
+         rel="noopener">
+        systemslibrarian.dev
+      </a>
+    </div>
+  </div>
+  <nav class="cl-header-nav">
+    <a class="cl-nav-btn"
+       href="https://github.com/systemslibrarian/crypto-lab-grover"
+       target="_blank"
+       rel="noopener">
+      GitHub
+    </a>
+    <button class="cl-theme-toggle" id="themeToggle" aria-label="Toggle theme">
+      ☀
+    </button>
+  </nav>
 </header>
 
 <main class="app">
+
+  <!-- Reality / Limits Panel -->
+  <section class="reality-panel" id="reality-panel" aria-label="About this demo">
+    <h2>About This Demo</h2>
+    <div class="reality-grid">
+      <div class="reality-col">
+        <h3>\u2713 This demo is</h3>
+        <ul>
+          <li>A correct classical simulation of Grover's amplitude amplification using exact trigonometric formulas</li>
+          <li>An educational tool for understanding the quadratic speedup and overshoot behavior of quantum search</li>
+          <li>A visualization of Grover's impact on symmetric key sizes (AES-128/192/256) under idealized assumptions</li>
+        </ul>
+      </div>
+      <div class="reality-col">
+        <h3>\u2717 This demo is not</h3>
+        <ul>
+          <li>A quantum hardware execution — all computation is classical math in the browser</li>
+          <li>A practical attack feasibility estimate — real costs include circuit depth, error correction, and oracle construction</li>
+          <li>A simulation of decoherence, noise, or physical qubit behavior</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="insight-panel">
+    <h2>What This Demonstrates</h2>
+    <p>Most explanations of Grover's algorithm focus on the headline \u221AN speedup. This demo shows the full probability oscillation: amplitude rises to a peak at k* iterations, then <em>decreases</em> if you keep going. This overshoot behavior reveals why Grover's algorithm requires precise iteration count — and why "just run more iterations" is counterproductive. It also shows why the practical cost of attacking AES is dominated by circuit depth per iteration, not the number of oracle calls alone.</p>
+  </section>
 
   <!-- Panel A: Amplitude Visualizer -->
   <section class="panel" id="panel-a" aria-labelledby="panel-a-heading">
@@ -470,6 +575,7 @@ Circuit depth: 2^${cost.circuitDepthExponent}</div>
 
     <div class="prob-curve-wrap">
       <canvas id="prob-canvas" aria-label="Probability vs iteration curve"></canvas>
+      <p class="graph-caption">Grover's success probability increases toward an optimum, then decreases if applied too many times. This oscillation is inherent to amplitude amplification.</p>
     </div>
 
     <div class="oracle-box">ORACLE  f: {0,1}^n \u2192 {0,1}
@@ -517,14 +623,16 @@ Grover does not see inside it.</div>
 
       <div class="aes-cards">${aesCards}</div>
 
-      <div class="insight-box">KEY INSIGHT: The circuit depth matters more than the qubit count.
+      <div class="insight-box">KEY INSIGHT: Under idealized assumptions, circuit depth matters more than the qubit count.
 
-AES-128 needs 2^82 logical qubit-cycles \u2014 not just 2^64 oracle calls.
-Each "Grover iteration" requires running the entire AES circuit coherently
+AES-128 requires ~2^82 logical qubit-cycles \u2014 not just 2^64 oracle calls.
+Each Grover iteration requires running the entire AES circuit coherently
 inside the quantum computer. This makes Grover attacks on AES significantly
-more expensive in practice than the headline 2^64 number suggests.
+more expensive in practice than the asymptotic 2^(n/2) figure suggests.
 
-Source: NIST/ETSI practical cost estimates for Grover on AES (2024)</div>
+These are not practical attack estimates \u2014 they represent idealized lower bounds.
+
+Source: Grassl et al. (2016); NIST/ETSI practical cost estimates (2024)</div>
 
       <div class="hash-table-wrap">
         <table class="hash-table">
@@ -539,13 +647,13 @@ Source: NIST/ETSI practical cost estimates for Grover on AES (2024)</div>
       </div>
 
       <div class="fix-box">
-        <h3>The Fix Is Simple</h3>
-        <p>Grover halves effective key length. Double your key length to restore security.</p>
+        <h3>The Mitigation</h3>
+        <p>Under idealized Grover assumptions, effective key length is halved. Doubling key length restores the original security margin.</p>
         <p style="margin-top:.5rem">AES-128 \u2192 AES-256 &ensp;(already standardized)<br>
 SHA-256 \u2192 SHA-512 &ensp;(straightforward upgrade)<br>
 HMAC-SHA-256 \u2192 HMAC-SHA-512</p>
         <p style="margin-top:.5rem">Unlike Shor\u2019s algorithm \u2014 which requires entirely new cryptographic
-algorithms \u2014 Grover\u2019s threat is mitigated by a parameter change alone.</p>
+algorithms \u2014 Grover\u2019s threat to symmetric crypto is mitigated by a parameter change alone.</p>
         <p style="margin-top:.5rem">Post-quantum cryptography (ML-KEM, ML-DSA) is required for public-key
 systems. For symmetric systems, longer keys are sufficient.</p>
       </div>
@@ -565,10 +673,42 @@ systems. For symmetric systems, longer keys are sufficient.</p>
             <tr><td>NIST response</td><td>Recommend 256-bit keys</td><td>New standards (ML-KEM, ML-DSA)</td></tr>
           </tbody>
         </table>
-        <p style="margin-top:.75rem;font-family:var(--mono);font-size:.72rem;color:var(--text-dim)">Grover is the lesser threat. Shor is the existential one. Both must be addressed, but they require different responses.</p>
+        <p style="margin-top:.75rem;font-family:var(--mono);font-size:.72rem;color:var(--text-dim)">Grover is the lesser threat (quadratic speedup). Shor is the existential one (exponential speedup). Both must be addressed, but they require different responses. All speedup figures assume idealized quantum computation.</p>
       </details>
     </section>
   </div>
+
+  <!-- Signature Feature: Why Grover Still Doesn't Break AES Instantly -->
+  <section class="panel" id="panel-signature" aria-labelledby="signature-heading">
+    <h2 id="signature-heading" class="panel-header">Why Grover Still Doesn't Break AES Instantly</h2>
+
+    <div class="controls">
+      <label for="key-selector">Key size:</label>
+      <select id="key-selector" class="btn" style="min-width:120px;">
+        <option value="128">AES-128</option>
+        <option value="192">AES-192</option>
+        <option value="256" selected>AES-256</option>
+      </select>
+    </div>
+
+    <div id="aes-example" class="aes-example-box">
+      <!-- populated by renderSignatureFeature() -->
+    </div>
+
+    <div id="aes-explanation" class="aes-explanation-box">
+      <!-- populated by renderSignatureFeature() -->
+    </div>
+  </section>
+
+  <!-- Scaling Insight -->
+  <section class="panel" id="scaling" aria-labelledby="scaling-heading">
+    <h2 id="scaling-heading" class="panel-header">Search Space Intuition</h2>
+    <div class="scaling-grid">
+      <div class="scaling-row"><span class="scaling-label">Classical brute force:</span><span class="scaling-value">2^128 operations</span></div>
+      <div class="scaling-row"><span class="scaling-label">Grover (idealized):</span><span class="scaling-value magenta">2^64 operations</span></div>
+    </div>
+    <p class="scaling-note">Even 2<sup>64</sup> operations is still enormous — roughly 18.4 quintillion. Under idealized assumptions, this is the best any quantum algorithm can achieve for unstructured search (BBBV lower bound). In practice, circuit depth and error correction make the real cost far higher.</p>
+  </section>
 
   <footer class="scripture-footer">
     <p>So whether you eat or drink or whatever you do, do it all for the glory of God. — 1 Corinthians 10:31</p>
@@ -577,11 +717,11 @@ systems. For symmetric systems, longer keys are sufficient.</p>
 }
 
 /* ── Theme toggle ──────────────────────────────────────── */
-const themeBtn = $('#theme-toggle');
+const themeBtn = $('#themeToggle');
 
 function syncThemeButton(): void {
   const current = document.documentElement.getAttribute('data-theme') || 'dark';
-  themeBtn.textContent = current === 'dark' ? '🌙' : '☀️';
+  themeBtn.textContent = current === 'dark' ? '☀' : '🌙';
   themeBtn.setAttribute('aria-label', current === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
 }
 

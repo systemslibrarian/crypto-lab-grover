@@ -14,7 +14,7 @@ const KEY_DATA: Record<128 | 192 | 256, Omit<KeySizeAnalysis, 'keyBits' | 'class
   128: {
     optimalGroverIters: '≈2^64',
     practicalThreat: 'weakened',
-    recommendation: 'Upgrade to AES-256. 2^64 effective operations is potentially feasible for a large quantum computer.',
+    recommendation: 'Upgrade to AES-256. Under idealized Grover assumptions, effective brute-force resistance drops to ~2^64 operations — potentially feasible for a large quantum computer, though circuit depth makes practical cost much higher.',
     nistStatus: 'Not recommended for post-quantum use',
   },
   192: {

@@ -44,6 +44,10 @@ function optimalIterationsForN(N: number): number {
   return Math.floor(Math.PI / (4 * theta));
 }
 
+// Classical simulation of Grover's algorithm
+// Models amplitude amplification mathematically
+// Not quantum hardware execution
+
 /**
  * Compute the angle theta for Grover's algorithm.
  * sin(theta) = 1 / sqrt(N) where N = 2^n.
@@ -75,9 +79,11 @@ function sampledIndices(N: number, targetIndex: number): number[] {
 }
 
 /**
- * Compute Grover amplitude state after k iterations.
+ * Simulate Grover amplitude state after k iterations.
+ * Classical simulation — models amplitude amplification mathematically,
+ * not quantum hardware execution.
  */
-export function computeGroverState(
+export function simulateGroverState(
   n: number,
   targetIndex: number,
   iteration: number,
@@ -118,9 +124,10 @@ export function computeGroverState(
 }
 
 /**
- * Compute success probability curve across all k from 0 to 2*k*.
+ * Simulate success probability curve across all k from 0 to 2*k*.
+ * Classical computation of sin²((2k+1)θ) — not a quantum measurement.
  */
-export function groverProbabilityCurve(n: number): Array<{
+export function simulateProbabilityCurve(n: number): Array<{
   iteration: number;
   probability: number;
   isOptimal: boolean;
