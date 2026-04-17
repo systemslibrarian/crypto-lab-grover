@@ -147,3 +147,7 @@ footer{text-align:center;padding:2rem 1rem;font-family:var(--mono);font-size:.8r
   .panel{padding:.75rem}
   .bar-chart{height:120px}
 }
+@media(max-width:320px){
+  .bar-chart{height:100px}
+  .bar-chart .bar{max-width:16px}
+}
