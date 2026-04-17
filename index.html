@@ -3,8 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <script>
-      const t = localStorage.getItem('cv-theme') || 'dark';
-      document.documentElement.setAttribute('data-theme', t);
+      (function () {
+        const saved = localStorage.getItem('theme');
+        document.documentElement.setAttribute('data-theme', saved ?? 'dark');
+      })();
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Interactive Grover's quantum search algorithm simulator — visualize amplitude amplification and its impact on AES and SHA symmetric cryptography." />

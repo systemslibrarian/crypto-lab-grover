@@ -432,7 +432,9 @@ Circuit depth: 2^${cost.circuitDepthExponent}</div>
 
   return `
 <a href="#panel-a" class="skip-link">Skip to main content</a>
-<button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark/light theme">\u{1F319}</button>
+<header style="position: relative;">
+  <button class="theme-toggle" id="theme-toggle" style="position: absolute; top: 0; right: 0;" aria-label="Switch to light mode">🌙</button>
+</header>
 
 <main class="app">
 
@@ -577,12 +579,21 @@ systems. For symmetric systems, longer keys are sufficient.</p>
 
 /* ── Theme toggle ──────────────────────────────────────── */
 const themeBtn = $('#theme-toggle');
+
+function syncThemeButton(): void {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  themeBtn.textContent = current === 'dark' ? '🌙' : '☀️';
+  themeBtn.setAttribute('aria-label', current === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+}
+
+syncThemeButton();
+
 themeBtn.addEventListener('click', () => {
   const current = document.documentElement.getAttribute('data-theme') || 'dark';
   const next = current === 'dark' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', next);
-  localStorage.setItem('cv-theme', next);
-  themeBtn.textContent = next === 'dark' ? '\u{1F319}' : '\u2600\uFE0F';
+  localStorage.setItem('theme', next);
+  syncThemeButton();
   // Redraw canvas for new theme colors
   renderState();
 });

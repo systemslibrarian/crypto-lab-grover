@@ -22,9 +22,9 @@ html{font-size:16px;scroll-behavior:smooth}
 body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
 
 /* ── Theme toggle ──────────────────────────────────────── */
-.theme-toggle{position:fixed;top:1rem;right:1rem;z-index:100;
-  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
-  width:2.75rem;height:2.75rem;cursor:pointer;font-size:1.2rem;
+.theme-toggle{z-index:10;
+  background:var(--surface);border:1px solid var(--border);border-radius:50%;
+  width:2.6rem;height:2.6rem;cursor:pointer;font-size:1.2rem;
   display:flex;align-items:center;justify-content:center;color:var(--text)}
 .theme-toggle:hover{border-color:var(--magenta)}
 .theme-toggle:focus-visible{outline:2px solid var(--magenta);outline-offset:2px}
