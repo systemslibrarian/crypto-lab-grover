@@ -169,3 +169,14 @@ footer{text-align:center;padding:2rem 1rem;font-family:var(--mono);font-size:.8r
 /* ── Focus for range inputs ────────────────────────────── */
 input[type="range"]:focus-visible{outline:2px solid var(--magenta);outline-offset:2px}
 details summary:focus-visible{outline:2px solid var(--magenta);outline-offset:2px}
+
+/* ── Selection ─────────────────────────────────────────── */
+::selection{background:var(--magenta);color:#fff}
+
+/* ── Print ─────────────────────────────────────────────── */
+@media print{
+  .theme-toggle,.skip-link,.controls .btn,.race-bar-wrap{display:none}
+  .panel{break-inside:avoid;border:1px solid #999}
+  body{background:#fff;color:#000}
+  .app{max-width:100%}
+}

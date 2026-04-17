@@ -53,6 +53,8 @@ const raceQuantumBar = $('#race-quantum-bar');
 const raceClassicalStats = $('#race-classical-stats');
 const raceQuantumStats = $('#race-quantum-stats');
 const speedupBody = $('#speedup-body');
+let raceTimer: number | null = null;
+let raceTimeout: number | null = null;
 
 /* ── Event bindings ────────────────────────────────────── */
 nSlider.addEventListener('input', () => {
@@ -189,9 +191,10 @@ function renderBars(state: GroverState): void {
 
   if (n > 4) {
     const note = document.createElement('div');
+    note.className = 'bar-note';
     note.style.cssText = 'font-family:var(--mono);font-size:.6rem;color:var(--text-dim);margin-top:.25rem';
     note.textContent = `Showing ${indices.length} of ${N} states`;
-    barLabels.parentElement?.appendChild(note);
+    barLabels.appendChild(note);
   }
 
   barChart.setAttribute('aria-label',
@@ -222,12 +225,11 @@ function renderProbCurve(state: GroverState): void {
   canvas.width = rect.width * dpr;
   canvas.height = rect.height * dpr;
   const ctx = canvas.getContext('2d')!;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.scale(dpr, dpr);
   const W = rect.width;
   const H = rect.height;
   const pad = { l: 40, r: 16, t: 16, b: 28 };
-
-  ctx.clearRect(0, 0, W, H);
 
   const kStar = state.optimalIterations;
   const maxK = curve.length - 1 || 1;
@@ -327,13 +329,15 @@ function renderRace(): void {
     (n === 128 ? 'At 10^9 quantum ops/sec: ~10^10 seconds (~317 years)' : '');
 
   /* Animated race for small n */
+  if (raceTimer !== null) { clearInterval(raceTimer); raceTimer = null; }
+  if (raceTimeout !== null) { clearTimeout(raceTimeout); raceTimeout = null; }
+
   if (n <= 16) {
     let classicalProgress = 0;
     let quantumProgress = 0;
     const quantumTarget = kStar;
     const classicalTarget = classicalExpected;
     const tickMs = 50;
-    let raceTimer: number | null = null;
 
     function tick() {
       const classicalStep = Math.max(1, cryptoRandomBelow(3) + 1);
@@ -348,13 +352,11 @@ function renderRace(): void {
       }
     }
 
-    classicalProgress = 0;
-    quantumProgress = 0;
     raceClassicalBar.style.width = '0%';
     raceQuantumBar.style.width = '0%';
     raceTimer = window.setInterval(tick, tickMs);
     // Stop after a reasonable duration
-    setTimeout(() => { if (raceTimer !== null) clearInterval(raceTimer); }, tickMs * (quantumTarget + 10));
+    raceTimeout = window.setTimeout(() => { if (raceTimer !== null) { clearInterval(raceTimer); raceTimer = null; } }, tickMs * (quantumTarget + 10));
   }
 
   /* Speedup table */
@@ -450,9 +452,9 @@ Circuit depth: 2^${cost.circuitDepthExponent}</div>
     </div>
 
     <div class="controls">
-      <button class="btn" id="step-btn">&#x25B6; Step</button>
-      <button class="btn" id="auto-btn">&#x25B6;&#x25B6; Auto-run</button>
-      <button class="btn" id="reset-btn">&#x23F9; Reset</button>
+      <button class="btn" id="step-btn" title="Keyboard: \u2192">&#x25B6; Step</button>
+      <button class="btn" id="auto-btn" title="Keyboard: Space">&#x25B6;&#x25B6; Auto-run</button>
+      <button class="btn" id="reset-btn" title="Keyboard: R">&#x23F9; Reset</button>
     </div>
 
     <div class="iter-display" id="iter-display">Iteration: <span class="current">k = 0</span> / <span class="optimal">k* = 3</span></div>
@@ -583,4 +585,24 @@ themeBtn.addEventListener('click', () => {
   themeBtn.textContent = next === 'dark' ? '\u{1F319}' : '\u2600\uFE0F';
   // Redraw canvas for new theme colors
   renderState();
+});
+
+/* ── Keyboard shortcuts ────────────────────────────────── */
+document.addEventListener('keydown', (e) => {
+  if ((e.target as HTMLElement).tagName === 'INPUT') return;
+  switch (e.key) {
+    case 'ArrowRight': stepBtn.click(); break;
+    case ' ':
+      e.preventDefault();
+      autoBtn.click();
+      break;
+    case 'r': resetBtn.click(); break;
+  }
+});
+
+/* ── Redraw on resize (canvas DPR) ─────────────────────── */
+let resizeRaf = 0;
+window.addEventListener('resize', () => {
+  cancelAnimationFrame(resizeRaf);
+  resizeRaf = requestAnimationFrame(() => renderState());
 });
