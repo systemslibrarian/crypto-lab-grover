@@ -123,6 +123,118 @@ export function simulateGroverState(
   };
 }
 
+/* ── Sub-step decomposition: oracle reflection + diffusion reflection ──
+ * A single Grover iteration is two reflections that compose into a rotation
+ * by 2θ in the plane spanned by |target⟩ and |non-target⟩:
+ *   1. ORACLE     — flip the sign of the target amplitude (reflect across
+ *                   the |non-target⟩ axis).
+ *   2. DIFFUSION  — invert every amplitude about the mean (reflect across
+ *                   the uniform-superposition axis).
+ * These exact amplitudes agree with the closed form sin((2k+1)θ); the
+ * decomposition just exposes the mechanism step by step. */
+
+export type SubPhase = 'superposition' | 'oracle' | 'diffusion';
+
+export interface GroverSubStep {
+  n: number;
+  N: number;
+  targetIndex: number;
+  /** Completed full iterations entering this sub-step. */
+  iteration: number;
+  subPhase: SubPhase;
+  /** Effective iteration count for probability/banner purposes. */
+  effectiveIteration: number;
+  optimalIterations: number;
+  targetAmplitude: number;
+  nonTargetAmplitude: number;
+  /** Mean amplitude of the current state — the axis diffusion reflects about. */
+  mean: number;
+  /** Angle of the state vector from the |non-target⟩ axis, in radians. */
+  angle: number;
+  successProbability: number;
+  amplitudes: number[];
+  truncated: boolean;
+}
+
+/**
+ * Exact amplitudes for one sub-step of Grover's algorithm.
+ * Classical simulation — models the two reflections mathematically,
+ * not quantum hardware execution.
+ */
+export function simulateGroverSubStep(
+  n: number,
+  targetIndex: number,
+  iteration: number,
+  subPhase: SubPhase,
+): GroverSubStep {
+  const N = validateInputs(n, targetIndex, iteration);
+  const theta = groverTheta(n);
+  const optimalIterations = optimalIterationsForN(N);
+
+  // State after `iteration` full iterations (the entry superposition).
+  const phaseAngle = (2 * iteration + 1) * theta;
+  const baseTarget = Math.sin(phaseAngle);
+  const baseNon = Math.cos(phaseAngle) / Math.sqrt(N - 1);
+
+  let targetAmplitude: number;
+  let nonTargetAmplitude: number;
+  let effectiveIteration: number;
+  let angle: number;
+
+  if (subPhase === 'superposition') {
+    targetAmplitude = baseTarget;
+    nonTargetAmplitude = baseNon;
+    effectiveIteration = iteration;
+    angle = phaseAngle;
+  } else if (subPhase === 'oracle') {
+    // Reflect across the |non-target⟩ axis: negate the target amplitude.
+    targetAmplitude = -baseTarget;
+    nonTargetAmplitude = baseNon;
+    effectiveIteration = iteration;
+    angle = -phaseAngle;
+  } else {
+    // Diffusion: invert about the mean of the post-oracle state. This yields
+    // exactly the superposition after iteration + 1.
+    const next = (2 * (iteration + 1) + 1) * theta;
+    targetAmplitude = Math.sin(next);
+    nonTargetAmplitude = Math.cos(next) / Math.sqrt(N - 1);
+    effectiveIteration = iteration + 1;
+    angle = next;
+  }
+
+  // Mean of the *current* displayed amplitudes (for the live mean line).
+  const mean = (targetAmplitude + (N - 1) * nonTargetAmplitude) / N;
+  const successProbability = targetAmplitude ** 2;
+
+  const truncated = n > 16;
+  let amplitudes: number[];
+  if (!truncated) {
+    amplitudes = Array.from({ length: N }, (_, i) =>
+      i === targetIndex ? targetAmplitude : nonTargetAmplitude,
+    );
+  } else {
+    const keep = sampledIndices(N, targetIndex);
+    amplitudes = keep.map((i) => (i === targetIndex ? targetAmplitude : nonTargetAmplitude));
+  }
+
+  return {
+    n,
+    N,
+    targetIndex,
+    iteration,
+    subPhase,
+    effectiveIteration,
+    optimalIterations,
+    targetAmplitude,
+    nonTargetAmplitude,
+    mean,
+    angle,
+    successProbability,
+    amplitudes,
+    truncated,
+  };
+}
+
 /**
  * Simulate success probability curve across all k from 0 to 2*k*.
  * Classical computation of sin²((2k+1)θ) — not a quantum measurement.

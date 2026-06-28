@@ -7,8 +7,9 @@ Grover's algorithm (Lov Grover, 1996) is a quantum search algorithm that finds a
 ## When to Use It
 
 - **Understanding why AES-256 retains strong post-quantum security margins while AES-128 is weakened** — Under idealized Grover assumptions, effective key length is halved: AES-128 drops to ~2^64 effective operations (potentially feasible), while AES-256 drops to ~2^128 (still strong). In practice, circuit depth makes the real cost far higher than these headline figures.
-- **Visualizing the oracle-and-diffusion loop** — The amplitude bar chart shows probability concentrating on the target state in real time, making the quadratic speedup intuitive.
-- **Teaching the overshoot phenomenon** — The probability curve shows why running more Grover iterations past k* = π/4·√N actually decreases success probability.
+- **Visualizing Grover as a rotation** — Grover's algorithm *is* two reflections per step (oracle + diffusion) that compose into a rotation by 2θ in the plane spanned by |target⟩ and the wrong answers. The demo shows the state vector rotating on the unit circle, so amplitude concentration and overshoot become geometric facts rather than formulas.
+- **Seeing the oracle and diffusion separately** — A "Show oracle + diffusion sub-steps" toggle walks one iteration as two distinct reflections: the oracle flips the target amplitude *negative* (visible as a downward bar), then diffusion inverts every amplitude about the mean (the gold mean line on the signed bar chart). The decomposition is exact — it agrees with the closed form sin((2k+1)θ) to floating-point precision.
+- **Teaching the overshoot phenomenon** — The probability curve and the rotation view together show why running more Grover iterations past k* = π/4·√N actually decreases success probability: the state vector rotates *past* the target axis.
 - **Comparing Grover and Shor as complementary quantum threats** — The side-by-side comparison table clarifies which algorithms each one breaks and what the mitigation is.
 - **Do not use this for public-key cryptography threats** — Grover does not affect RSA, ECC, or Diffie-Hellman; that is Shor's domain.
 
@@ -16,7 +17,9 @@ Grover's algorithm (Lov Grover, 1996) is a quantum search algorithm that finds a
 
 [https://systemslibrarian.github.io/crypto-lab-grover/](https://systemslibrarian.github.io/crypto-lab-grover/)
 
-Adjust the qubit count (n = 2–20) to resize the search space, step through Grover iterations one at a time or auto-run, and watch amplitude concentrate on the target state. The demo also shows AES-128/192/256 quantum impact analysis with an interactive key-size selector, a hash function security table (MD5 through SHA3-512), and a classical-vs-quantum search race animation.
+Adjust the qubit count (n = 2–20) to resize the search space, step through Grover iterations one at a time or auto-run, and watch the state vector rotate toward the target while the signed amplitude bars concentrate. Enable "Show oracle + diffusion sub-steps" to walk each iteration as its two reflections. The demo also shows AES-128/192/256 quantum impact analysis with an interactive key-size selector, a hash function security table (MD5 through SHA3-512), and a classical-vs-quantum search race animation.
+
+You can deep-link a specific state with query parameters — e.g. `?steps=3` jumps to the optimal iteration, and `?sub=1&steps=1` opens at the oracle sub-step.
 
 ## How to Run Locally
 

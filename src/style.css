@@ -40,13 +40,36 @@ h1{font-family:var(--mono);font-size:clamp(1rem,3vw,1.5rem);text-transform:upper
 .btn:focus-visible{outline:2px solid var(--magenta);outline-offset:2px}
 .btn.active{border-color:var(--magenta);color:var(--magenta)}
 
-/* ── Amplitude bars ────────────────────────────────────── */
-.bar-chart{display:flex;align-items:flex-end;gap:2px;height:220px;padding:.5rem 0;overflow-x:auto}
-.bar-chart .bar{flex:1;min-width:4px;max-width:32px;border-radius:2px 2px 0 0;transition:height .5s ease,background .5s ease;position:relative}
-.bar-chart .bar.target{background:var(--magenta);box-shadow:var(--magenta-glow)}
+/* ── Amplitude bars (signed, about a zero baseline) ─────── */
+.bar-chart{display:flex;align-items:stretch;gap:2px;height:240px;overflow-x:auto;position:relative}
+.bar-slot{flex:1;min-width:4px;max-width:32px;position:relative}
+.bar-chart .bar{position:absolute;left:0;right:0;transition:height .45s ease,top .45s ease,bottom .45s ease,background .3s ease}
+.bar-chart .bar.pos{border-radius:2px 2px 0 0}
+.bar-chart .bar.neg{border-radius:0 0 2px 2px}
+.bar-chart .bar.target{background:var(--magenta);box-shadow:var(--magenta-glow);z-index:2}
 .bar-chart .bar.non-target{background:var(--dim-blue)}
-.bar-labels{display:flex;gap:2px;font-family:var(--mono);font-size:.55rem;color:var(--text-dim);overflow-x:auto}
+.bar-baseline{position:absolute;left:0;right:0;top:50%;height:0;border-top:1px solid var(--text-dim);opacity:.55;z-index:1;pointer-events:none}
+.bar-mean{position:absolute;left:0;right:0;height:0;border-top:1px dashed var(--gold);z-index:3;pointer-events:none;transition:top .45s ease}
+.bar-mean-tag{position:absolute;right:2px;top:-1.15em;font-family:var(--mono);font-size:.55rem;color:var(--gold);letter-spacing:.05em}
+.bar-toobig{font-family:var(--mono);font-size:.75rem;color:var(--text-dim);padding:1rem;align-self:center}
+.bar-labels{display:flex;gap:2px;flex-wrap:wrap;font-family:var(--mono);font-size:.55rem;color:var(--text-dim);overflow-x:auto}
 .bar-labels span{flex:1;min-width:4px;max-width:32px;text-align:center;overflow:hidden;text-overflow:ellipsis}
+.bar-note{font-family:var(--mono);font-size:.6rem;color:var(--text-dim);margin-top:.25rem;width:100%}
+
+/* ── Step controls: sub-step toggle + phase label ──────── */
+.checkbox-label{display:inline-flex;align-items:center;gap:.45rem;font-family:var(--mono);font-size:.75rem;color:var(--text-dim);cursor:pointer;user-select:none}
+.checkbox-label input{accent-color:var(--magenta);width:16px;height:16px;cursor:pointer}
+.phase-label{font-family:var(--mono);font-size:.75rem;padding:.45rem .75rem;border-radius:var(--radius);margin:.25rem 0 .6rem;border:1px solid var(--border);background:var(--bg)}
+.phase-label.superposition{color:var(--text-dim)}
+.phase-label.oracle{color:var(--magenta);border-color:var(--magenta)}
+.phase-label.diffusion{color:var(--gold);border-color:var(--gold)}
+
+/* ── Visualisation row: rotation view beside amplitude bars ─ */
+.viz-row{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin:.5rem 0 1rem}
+.viz-cell{min-width:0}
+.viz-title{font-family:var(--mono);font-size:.72rem;font-weight:400;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);margin-bottom:.5rem}
+#rotation-canvas{width:100%;height:300px;display:block;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg)}
+@media(max-width:768px){.viz-row{grid-template-columns:1fr}}
 
 /* ── Amplitude values ──────────────────────────────────── */
 .amp-values{font-family:var(--mono);font-size:.78rem;line-height:1.8;color:var(--text-dim);margin-top:.75rem;white-space:pre-wrap}
@@ -72,9 +95,32 @@ h1{font-family:var(--mono);font-size:clamp(1rem,3vw,1.5rem);text-transform:upper
 .race-col h3{font-family:var(--mono);font-size:.78rem;text-transform:uppercase;margin-bottom:.5rem;color:var(--text-dim)}
 .race-col .race-stats{font-family:var(--mono);font-size:.72rem;color:var(--text-dim);line-height:1.8;white-space:pre-wrap}
 .race-bar-wrap{height:1.2rem;background:var(--bg);border-radius:var(--radius);overflow:hidden;margin:.4rem 0}
-.race-bar{height:100%;border-radius:var(--radius);transition:width .3s linear}
+.race-bar{height:100%;border-radius:var(--radius);transition:width .15s linear}
 .race-bar.classical{background:var(--dim-blue)}
 .race-bar.quantum{background:var(--magenta)}
+.race-bar.quantum.found{box-shadow:var(--magenta-glow);outline:1px solid var(--magenta)}
+.race-status{font-family:var(--mono);font-size:.7rem;color:var(--text-dim);min-height:1.1em;margin:.1rem 0}
+.race-axis-note{font-family:var(--mono);font-size:.7rem;color:var(--text-dim);line-height:1.6;margin-top:.6rem}
+
+/* ── Math layer (algebra view of the current state) ────── */
+.math-layer{font-family:var(--mono);font-size:.8rem;line-height:1.85;border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:var(--radius);padding:.85rem 1rem;background:var(--bg);margin:.25rem 0 1rem;color:var(--text-dim)}
+.math-layer .ml-term{display:block;color:var(--text)}
+.math-layer .ml-term.hot{color:var(--gold);font-weight:700}
+.math-layer .ml-note{display:block;margin-top:.55rem;color:var(--text-dim);font-size:.7rem;line-height:1.6}
+
+/* ── Measurement simulator ─────────────────────────────── */
+.measure-box{margin:.25rem 0 1rem}
+.measure-caption{font-family:var(--mono);font-size:.72rem;color:var(--text-dim)}
+.measure-dots{display:grid;grid-template-columns:repeat(20,1fr);gap:3px;max-width:440px;margin:.6rem 0}
+.measure-dots .m-dot{width:100%;aspect-ratio:1;border-radius:2px}
+.measure-dots .m-dot.hit{background:var(--magenta);box-shadow:var(--magenta-glow)}
+.measure-dots .m-dot.miss{background:var(--dim-blue)}
+.measure-stats{font-family:var(--mono);font-size:.78rem;color:var(--text-dim);line-height:1.9}
+.measure-stats .m-hit-text{color:var(--magenta);font-weight:700;margin-right:.5rem}
+.measure-stats .m-miss-text{color:var(--text-dim);font-weight:700;margin-right:.5rem}
+
+/* ── Inline table/accuracy note ────────────────────────── */
+.table-note{font-family:var(--mono);font-size:.72rem;color:var(--text-dim);line-height:1.65;margin:.5rem 0 0}
 
 /* ── Speedup vis ───────────────────────────────────────── */
 .speedup-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.72rem;margin-top:.75rem}
