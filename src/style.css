@@ -315,6 +315,11 @@ details summary:focus-visible{outline:2px solid var(--magenta);outline-offset:2p
 .budget-note{font-size:.8rem;color:var(--text-dim);margin-top:.5rem;line-height:1.5}
 .budget-caveat{font-size:.78rem;color:var(--text-dim);margin-top:.5rem;line-height:1.5;border-top:1px solid var(--border);padding-top:.5rem}
 
+/* Collapsible reference panels (sources, glossary) */
+.ref-details>summary{cursor:pointer;font-family:var(--mono);font-size:.82rem;color:var(--magenta);padding:.25rem 0;list-style:revert}
+.ref-details>summary:hover{text-decoration:underline}
+.ref-details[open]>summary{margin-bottom:.75rem}
+
 /* Sources table */
 .sources-table{width:100%;border-collapse:collapse;font-size:.82rem}
 .sources-table th,.sources-table td{text-align:left;padding:.55rem .6rem;border-bottom:1px solid var(--border);vertical-align:top}

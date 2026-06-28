@@ -679,6 +679,9 @@ function renderRotation(sub: GroverSubStep): void {
   ctx.scale(dpr, dpr);
   const W = rect.width;
   const H = rect.height;
+  // Bail if the canvas is laid out too small to draw — otherwise the radius
+  // below goes negative and ctx.arc() throws. A later render fixes it.
+  if (W < 64 || H < 64) return;
 
   const css = (name: string, fallback: string) =>
     getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
@@ -1020,7 +1023,8 @@ const LESSON: LessonStage[] = [
     title: '5 · What it means for crypto',
     body: `<p>The same math sets the cost of attacking AES. A brute-force key search over 2¹²⁸ keys needs ~2⁶⁴ Grover iterations — key length is effectively <strong>halved</strong>.</p>
 <p>But each iteration runs a full AES circuit coherently, so the real cost (≈2⁸² qubit-cycles for AES-128) is far higher. <strong>AES-256</strong> keeps a 2¹²⁸ margin and stays strong. Grover ≠ Shor: this is a quadratic dent, not an exponential break.</p>
-<p class="lesson-do">Explore the panels below, or try <em>Challenge mode</em> to test yourself.</p>`,
+<p>Next, open <strong>“The Real Cost of One Oracle Call”</strong> to see iterations separated from cost-per-call, and <strong>“Assumptions &amp; Sources”</strong> for the references behind these numbers.</p>
+<p class="lesson-do">Press <em>Finish</em> to jump to Challenge mode and test yourself.</p>`,
     apply: () => { renderSignatureFeature(); document.getElementById('panel-c')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); },
   },
 ];
@@ -1056,7 +1060,12 @@ lessonStartBtn.addEventListener('click', startLesson);
 lessonExitBtn.addEventListener('click', exitLesson);
 lessonPrevBtn.addEventListener('click', () => { if (lessonStage > 0) { lessonStage--; showLessonStage(); } });
 lessonNextBtn.addEventListener('click', () => {
-  if (lessonStage >= LESSON.length - 1) { exitLesson(); return; }
+  if (lessonStage >= LESSON.length - 1) {
+    exitLesson();
+    // Finishing routes the learner onward to self-assessment.
+    document.getElementById('panel-challenge')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
   lessonStage++;
   showLessonStage();
 });
@@ -1514,6 +1523,8 @@ systems. For symmetric systems, longer keys are sufficient.</p>
   <!-- Source-traceable assumptions -->
   <section class="panel" id="panel-sources" aria-labelledby="sources-heading">
     <h2 id="sources-heading" class="panel-header">Assumptions &amp; Sources</h2>
+    <details class="ref-details">
+      <summary>Show the claim-by-claim source table</summary>
     <p class="panel-intro">Every headline number here traces to a published result. The simulation is idealized math (see “About This Demo”); these are the references behind the claims.</p>
     <table class="sources-table">
       <caption class="sr-only">Claims in this demo and their published sources</caption>
@@ -1527,6 +1538,7 @@ systems. For symmetric systems, longer keys are sufficient.</p>
         <tr><td>Shor breaks RSA / ECC / Diffie-Hellman (not symmetric crypto).</td><td>Shor, <em>Polynomial-time algorithms for prime factorization and discrete logarithms</em>, 1994/1997.</td></tr>
       </tbody>
     </table>
+    </details>
   </section>
 
   <!-- Challenge mode -->
@@ -1539,6 +1551,8 @@ systems. For symmetric systems, longer keys are sufficient.</p>
   <!-- Glossary -->
   <section class="panel" id="panel-glossary" aria-labelledby="glossary-heading">
     <h2 id="glossary-heading" class="panel-header">Glossary</h2>
+    <details class="ref-details">
+      <summary>Show definitions of nearby terms</summary>
     <p class="panel-intro">Terse definitions, with the distinctions that trip people up.</p>
     <dl class="glossary">
       <dt>Amplitude</dt><dd>A signed number attached to each state. It can be <em>negative</em> — that’s what the oracle exploits. Not directly observable.</dd>
@@ -1556,6 +1570,7 @@ systems. For symmetric systems, longer keys are sufficient.</p>
       <dt>Symmetric cryptography</dt><dd>One shared key (AES). Only quadratically weakened by Grover.</dd>
       <dt>Public-key cryptography</dt><dd>Separate public/private keys (RSA, ECC). Broken by Shor — Grover doesn’t apply.</dd>
     </dl>
+    </details>
   </section>
 
   <footer class="scripture-footer">

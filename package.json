@@ -7,10 +7,12 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "smoke": "npm run build && node smoke.mjs",
     "deploy": "npm run build && gh-pages -d dist"
   },
   "devDependencies": {
     "gh-pages": "^6.3.0",
+    "playwright": "^1.61.1",
     "typescript": "~6.0.2",
     "vite": "^8.0.4"
   }
