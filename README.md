@@ -35,6 +35,8 @@ Beyond free-play, the demo is built to teach actively:
 - **Challenge mode** — short questions with immediate, explained feedback.
 - **Assumptions & sources** table and a local **glossary** distinguishing nearby terms (amplitude vs probability, preimage vs collision, symmetric vs public-key).
 
+For classroom use, see the [teaching guide](docs/TEACHING.md) — lesson plans (15- and 45-minute), discussion questions, a printable worksheet, and the challenge-mode answer key.
+
 ## How to Run Locally
 
 ```bash
