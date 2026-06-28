@@ -35,7 +35,20 @@ function shutdown(code) {
 }
 
 /* ── Drive the page ─────────────────────────────────────── */
-const browser = await chromium.launch({ channel: 'msedge', headless: true });
+// Prefer the installed Edge channel (no download); fall back to Playwright's
+// bundled Chromium for CI (run `npx playwright install chromium` first).
+let browser;
+try {
+  browser = await chromium.launch({ channel: 'msedge', headless: true });
+} catch {
+  try {
+    browser = await chromium.launch({ headless: true });
+  } catch (e) {
+    log(`could not launch a browser: ${e.message}`);
+    log('install one with: npx playwright install chromium');
+    shutdown(1);
+  }
+}
 const page = await browser.newPage({ viewport: { width: 1200, height: 900 } });
 page.on('console', (m) => { if (m.type() === 'error') errors.push(`console.error: ${m.text()}`); });
 page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
