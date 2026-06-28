@@ -257,3 +257,88 @@ details summary:focus-visible{outline:2px solid var(--magenta);outline-offset:2p
   body{background:#fff;color:#000}
   .app{max-width:100%}
 }
+
+/* ── Teaching additions ────────────────────────────────── */
+.panel-intro{font-size:.85rem;color:var(--text-dim);margin-bottom:1rem;line-height:1.5}
+
+/* Guided lesson */
+.lesson-panel{border-color:var(--magenta)}
+.lesson-intro{font-size:.85rem;color:var(--text-dim);margin-bottom:1rem;line-height:1.5}
+.lesson-start{font-size:.9rem}
+.lesson-body{margin:1rem 0;font-size:.9rem;line-height:1.6}
+.lesson-body p{margin-bottom:.6rem}
+.lesson-title{font-family:var(--mono);color:var(--magenta);font-size:1rem;margin-bottom:.6rem}
+.lesson-do{color:var(--gold);font-style:italic}
+.lesson-nav{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;margin-top:.75rem}
+.lesson-progress{font-family:var(--mono);font-size:.8rem;color:var(--text-dim);min-width:7rem;text-align:center}
+.lesson-exit{margin-left:auto;opacity:.8}
+.lesson-nav .btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* Prediction checkpoints */
+.predict-prompt{background:var(--bg);border:1px dashed var(--gold);border-radius:var(--radius);padding:.75rem;margin-bottom:1rem;font-size:.85rem}
+.predict-q{display:block;margin-bottom:.5rem;color:var(--text)}
+.predict-choice{margin-right:.5rem;margin-top:.25rem}
+.predict-idle{color:var(--text-dim)}
+.predict-result.right{color:var(--green)}
+.predict-result.wrong{color:var(--gold)}
+
+/* Compare the mental models */
+.mental-models{margin:1rem 0}
+.mental-head{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;margin-bottom:.5rem}
+.mental-label{font-family:var(--mono);font-size:.8rem;color:var(--text-dim)}
+.mental-switch{display:inline-flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.mental-btn{background:var(--surface);color:var(--text-dim);border:none;border-right:1px solid var(--border);padding:.4rem .8rem;font-family:var(--mono);font-size:.78rem;cursor:pointer}
+.mental-btn:last-child{border-right:none}
+.mental-btn:hover{color:var(--text)}
+.mental-btn.active{background:var(--magenta);color:#fff}
+.mental-btn:focus-visible{outline:2px solid var(--magenta);outline-offset:-2px}
+.mental-box{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:.75rem;font-size:.84rem;line-height:1.5}
+.mm-hint{color:var(--text-dim);font-size:.78rem;margin-top:.5rem}
+.mm-highlight{outline:2px solid var(--magenta);outline-offset:3px;border-radius:var(--radius);transition:outline-color .2s}
+
+/* Reactive misconception */
+.misconception{background:var(--bg);border-left:3px solid var(--gold);border-radius:var(--radius);padding:.75rem .9rem;margin:1rem 0;font-size:.84rem;line-height:1.5}
+.mc-myth{margin-bottom:.4rem}
+.mc-real{color:var(--text)}
+.mc-tag{display:inline-block;font-family:var(--mono);font-size:.7rem;font-weight:700;color:var(--gold);margin-right:.4rem}
+.mc-tag.real{color:var(--green)}
+
+/* Oracle cost budget */
+.budget-grid{display:flex;flex-direction:column;gap:.4rem;margin:1rem 0}
+.budget-row{display:flex;justify-content:space-between;align-items:center;gap:1rem;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:.6rem .8rem;font-size:.82rem}
+.budget-row.total{border-color:var(--magenta)}
+.budget-op{text-align:center;font-family:var(--mono);color:var(--text-dim);font-size:1rem}
+.budget-row .bv{font-family:var(--mono);color:var(--text);white-space:nowrap}
+.budget-row .bv.hot{color:var(--magenta);font-weight:700}
+.budget-row .bv.ok{color:var(--green)}
+.budget-row .bv.warn{color:var(--gold)}
+.budget-note{font-size:.8rem;color:var(--text-dim);margin-top:.5rem;line-height:1.5}
+.budget-caveat{font-size:.78rem;color:var(--text-dim);margin-top:.5rem;line-height:1.5;border-top:1px solid var(--border);padding-top:.5rem}
+
+/* Sources table */
+.sources-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.sources-table th,.sources-table td{text-align:left;padding:.55rem .6rem;border-bottom:1px solid var(--border);vertical-align:top}
+.sources-table th{font-family:var(--mono);color:var(--text-dim);font-weight:400;text-transform:uppercase;font-size:.72rem;letter-spacing:.06em}
+.sources-table td:first-child{color:var(--text)}
+.sources-table td:last-child{color:var(--text-dim)}
+
+/* Challenge mode */
+.challenge-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:.9rem;margin-bottom:.9rem}
+.challenge-q{font-size:.88rem;color:var(--text);margin-bottom:.6rem}
+.challenge-opts{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.5rem}
+.challenge-opt.correct{border-color:var(--green);color:var(--green)}
+.challenge-opt.incorrect{border-color:var(--gold);color:var(--gold)}
+.challenge-card.answered .challenge-opt{cursor:default}
+.challenge-feedback{font-size:.82rem;color:var(--text-dim);line-height:1.5}
+.challenge-feedback:empty{display:none}
+.fb-right{color:var(--green);font-weight:700}
+.fb-wrong{color:var(--gold);font-weight:700}
+
+/* Glossary */
+.glossary{display:grid;grid-template-columns:max-content 1fr;gap:.4rem 1rem;font-size:.84rem;line-height:1.5}
+.glossary dt{font-family:var(--mono);color:var(--magenta);white-space:nowrap}
+.glossary dd{color:var(--text-dim);margin:0}
+@media(max-width:560px){
+  .glossary{grid-template-columns:1fr;gap:.1rem .5rem}
+  .glossary dd{margin-bottom:.5rem}
+}

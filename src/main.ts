@@ -72,6 +72,34 @@ const measureBtn = $('#measure-btn');
 const measureDots = $('#measure-dots');
 const measureStats = $('#measure-stats');
 
+/* Reactive teaching panels */
+const misconceptionEl = $('#misconception');
+const mentalBox = $('#mental-box');
+const mentalBtns = Array.from(document.querySelectorAll<HTMLButtonElement>('.mental-btn'));
+const vizRotation = $('#viz-rotation');
+const vizAmplitudes = $('#viz-amplitudes');
+
+/* Prediction checkpoints */
+const predictToggle = $('#predict-toggle') as HTMLInputElement;
+const predictPrompt = $('#predict-prompt');
+let predictMode = false;
+let pendingPrediction = false;   // true while waiting for the learner to commit
+let lastProb = 0;                // probability before the most recent advance
+
+/* Compare-the-mental-models view */
+type MentalView = 'algebra' | 'geometry' | 'amplitudes';
+let mentalView: MentalView = 'geometry';
+
+/* Guided lesson */
+const lessonStartBtn = $('#lesson-start');
+const lessonNav = $('#lesson-nav');
+const lessonPrevBtn = $('#lesson-prev') as HTMLButtonElement;
+const lessonNextBtn = $('#lesson-next') as HTMLButtonElement;
+const lessonExitBtn = $('#lesson-exit');
+const lessonBody = $('#lesson-body');
+const lessonProgress = $('#lesson-progress');
+let lessonStage = -1;            // -1 = not in a lesson
+
 /* Race panel */
 const raceClassicalBar = $('#race-classical-bar');
 const raceQuantumBar = $('#race-quantum-bar');
@@ -139,8 +167,73 @@ function stopAuto(): void {
 }
 
 stepBtn.addEventListener('click', () => {
+  // Prediction mode: a Step opens a guess; the reveal happens when the learner
+  // picks a direction, so ignore further Step clicks until they commit.
+  if (predictMode) {
+    if (!pendingPrediction) showPredictionPrompt();
+    return;
+  }
   if (advance()) renderState();
 });
+
+predictToggle.addEventListener('change', () => {
+  predictMode = predictToggle.checked;
+  pendingPrediction = false;
+  predictPrompt.style.display = predictMode ? 'block' : 'none';
+  predictPrompt.innerHTML = predictMode
+    ? '<span class="predict-idle">Prediction mode on — press <strong>Step</strong> and commit a guess before each reveal.</span>'
+    : '';
+  // Predictions and auto-run don't mix: pause auto so guesses aren't skipped.
+  if (predictMode) stopAuto();
+});
+
+/** Success probability of the state we'd be revealing from. */
+function currentProb(): number {
+  return simulateGroverSubStep(n, targetIndex, currentK, subPhase).successProbability;
+}
+
+function showPredictionPrompt(): void {
+  pendingPrediction = true;
+  lastProb = currentProb();
+  const sub = simulateGroverSubStep(n, targetIndex, currentK, subPhase);
+  let q: string;
+  if (decompose && subPhase === 'superposition') q = 'Next step is the ORACLE — will the target’s success probability go up, down, or stay about the same?';
+  else if (decompose && subPhase === 'oracle') q = 'Next step is DIFFUSION — up, down, or about the same?';
+  else if (sub.effectiveIteration >= sub.optimalIterations) q = 'You’re at or past k*. After one more iteration — up, down, or about the same?';
+  else q = 'Before you step: will the target’s success probability go up, down, or stay about the same?';
+
+  predictPrompt.style.display = 'block';
+  predictPrompt.innerHTML = `<span class="predict-q">${q}</span>`;
+  (['up', 'down', 'same'] as const).forEach((choice) => {
+    const btn = document.createElement('button');
+    btn.className = 'btn predict-choice';
+    btn.textContent = choice === 'up' ? '↑ Increase' : choice === 'down' ? '↓ Decrease' : '→ About the same';
+    btn.addEventListener('click', () => resolvePrediction(choice));
+    predictPrompt.appendChild(btn);
+  });
+}
+
+function resolvePrediction(choice: 'up' | 'down' | 'same'): void {
+  const before = lastProb;
+  if (!advance()) {
+    pendingPrediction = false;
+    predictPrompt.innerHTML = '<span class="predict-idle">End of the walk (k = 2·k*). Press Reset to start over.</span>';
+    return;
+  }
+  renderState();
+  const after = currentProb();
+  const eps = 1e-6;
+  const actual: 'up' | 'down' | 'same' = after > before + eps ? 'up' : after < before - eps ? 'down' : 'same';
+  const word = { up: 'increased', down: 'decreased', same: 'stayed about the same' }[actual];
+  const correct = choice === actual;
+  pendingPrediction = false;
+  predictPrompt.style.display = 'block';
+  predictPrompt.innerHTML =
+    `<div class="predict-result ${correct ? 'right' : 'wrong'}">` +
+    `${correct ? '✓ Correct' : '✗ Not quite'} — probability ${word} ` +
+    `(${(before * 100).toFixed(1)}% → ${(after * 100).toFixed(1)}%). ` +
+    `Press <strong>Step</strong> to predict the next one.</div>`;
+}
 
 autoBtn.addEventListener('click', () => {
   if (autoTimer !== null) { stopAuto(); return; }
@@ -214,6 +307,10 @@ function renderState(): void {
 
   /* Math layer (algebra view of the same state) */
   renderMathLayer(sub);
+
+  /* Reactive teaching: misconception correction + mental-model view */
+  renderMisconception(sub);
+  renderMentalModels(sub);
 
   /* Measurement is tied to a specific k \u2014 invalidate stale results on any change */
   resetMeasurement();
@@ -391,6 +488,77 @@ function runMeasurements(): void {
   liveRegion.textContent =
     `Measured 100 times at k=${sub.effectiveIteration}: ${hits} target outcomes, ` +
     `${shots - hits} wrong outcomes. Theoretical success ${theoretical}%.`;
+}
+
+/* ── Reactive misconception panel ──────────────────────────
+ * Surfaces the correction at the moment a learner is most likely to form the
+ * wrong idea — keyed to the current sub-step and where we are on the curve. */
+function renderMisconception(state: GroverSubStep): void {
+  const effK = state.effectiveIteration;
+  const kStar = state.optimalIterations;
+  let myth: string;
+  let reality: string;
+
+  if (decompose && state.subPhase === 'oracle') {
+    myth = 'The oracle “checks every key at once” and tells Grover the answer.';
+    reality = 'The oracle only flips the *phase* of the marked state (its amplitude goes negative). It never reveals which key is correct — the information is hidden in interference, not read out.';
+  } else if (decompose && state.subPhase === 'diffusion') {
+    myth = 'Diffusion “measures” the state and keeps the best amplitude.';
+    reality = 'Diffusion is a deterministic reflection of every amplitude about their mean — no measurement happens. The phase-flipped target ends up above the mean, so it grows; nothing is observed yet.';
+  } else if (effK > kStar) {
+    myth = 'More Grover iterations are always better.';
+    reality = 'Past k* the state vector rotates *beyond* the target axis, so success probability falls again. Grover needs the right number of steps, not the most.';
+  } else if (effK === kStar && effK > 0) {
+    myth = 'At k* the answer is guaranteed.';
+    reality = `At k* probability peaks (~${(state.successProbability * 100).toFixed(0)}%) but measurement is still a sample, not a certainty. Press “Measure ×100” to see the spread.`;
+  } else {
+    myth = 'Quantum search tries all keys in parallel and then reads the winner.';
+    reality = 'Amplitudes interfere so the marked state grows and the rest shrink; measurement is probabilistic. This is a quadratic (√N) speedup — not the exponential break Shor gives RSA.';
+  }
+
+  misconceptionEl.innerHTML =
+    `<div class="mc-myth"><span class="mc-tag">Myth ✗</span> ${myth}</div>` +
+    `<div class="mc-real"><span class="mc-tag real">Reality ✓</span> ${reality}</div>`;
+}
+
+/* ── Compare the mental models: algebra / geometry / amplitudes ──
+ * Three routes to the same fact. Each lens gets the overshoot explanation it
+ * tells best, and we highlight the matching visual. */
+function renderMentalModels(state: GroverSubStep): void {
+  const theta = Math.asin(1 / Math.sqrt(state.N));
+  const angleDeg = deg(state.angle).toFixed(0);
+  const thetaDeg = deg(theta).toFixed(1);
+
+  const views: Record<MentalView, { label: string; text: string }> = {
+    algebra: {
+      label: 'Algebra',
+      text: `P(target) = sin²((2k+1)·θ), with θ = ${thetaDeg}°. Overshoot is when (2k+1)·θ climbs past 90°: sin² peaks at 90° and then *decreases*, so extra iterations lower the probability.`,
+    },
+    geometry: {
+      label: 'Geometry',
+      text: `The state is a unit vector at ${angleDeg}° from the wrong-answer axis; each step rotates it +2θ (${(2 * deg(theta)).toFixed(1)}°) toward |target⟩ at 90°. Overshoot is simply rotating *past* vertical — the vector’s height (the amplitude) starts shrinking.`,
+    },
+    amplitudes: {
+      label: 'Amplitudes',
+      text: `Each step the oracle flips the target amplitude negative, then diffusion reflects every amplitude about their mean. Once the target is already the tallest bar, reflecting about the mean overshoots it back downward — that is overshoot, bar by bar.`,
+    },
+  };
+
+  mentalBtns.forEach((b) => {
+    const active = b.dataset.view === mentalView;
+    b.classList.toggle('active', active);
+    b.setAttribute('aria-pressed', String(active));
+  });
+
+  const v = views[mentalView];
+  mentalBox.innerHTML =
+    `<p><strong>${v.label} — why overshoot happens:</strong> ${v.text}</p>` +
+    `<p class="mm-hint">Switch lenses above: each explains the <em>same</em> overshoot a different way. Which one clicks for you?</p>`;
+
+  // Highlight the visual that matches the chosen lens.
+  vizRotation.classList.toggle('mm-highlight', mentalView === 'geometry');
+  vizAmplitudes.classList.toggle('mm-highlight', mentalView === 'amplitudes');
+  mathLayer.classList.toggle('mm-highlight', mentalView === 'algebra');
 }
 
 /* ── Probability curve canvas ──────────────────────────── */
@@ -804,6 +972,192 @@ if (new URLSearchParams(location.search).get('measure') === '1') runMeasurements
 
 $('#key-selector').addEventListener('change', () => renderSignatureFeature());
 
+/* ── Compare-the-mental-models toggle ──────────────────── */
+mentalBtns.forEach((b) => {
+  b.addEventListener('click', () => {
+    mentalView = (b.dataset.view as MentalView) ?? 'geometry';
+    renderState();
+  });
+});
+
+/* ── Guided lesson mode ────────────────────────────────── */
+interface LessonStage { title: string; body: string; apply: () => void; }
+
+function setN(next: number): void {
+  n = next;
+  N = 2 ** n;
+  nSlider.value = String(n);
+  nSlider.setAttribute('aria-valuenow', String(n));
+}
+
+const LESSON: LessonStage[] = [
+  {
+    title: '1 · The search problem',
+    body: `<p>We have <strong>N = 2⁴ = 16</strong> possible keys and exactly <strong>one</strong> is correct. A classical attacker tries keys at random and expects to check about <strong>N/2 = 8</strong> before hitting it.</p>
+<p>Grover will find it in only about <strong>√N ≈ 4</strong> oracle queries. Watch the bars below: right now every key is equally likely.</p>
+<p class="lesson-do">Try it: when you press <em>Next</em>, we’ll run one Grover step as its two halves.</p>`,
+    apply: () => { setN(4); targetIndex = 7; decompose = false; decomposeToggle.checked = false; currentK = 0; subPhase = 'superposition'; renderState(); document.getElementById('panel-a')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); },
+  },
+  {
+    title: '2 · One step = oracle + diffusion',
+    body: `<p>Sub-steps are now on. The <strong>oracle</strong> flips the target amplitude <em>negative</em> (its bar drops below the zero line) — it marks the answer with a phase, it does not reveal it.</p>
+<p>Press <em>Step</em> once more to run <strong>diffusion</strong>: every amplitude is reflected about the mean (the gold line), which lifts the marked one up. Together they are one rotation.</p>`,
+    apply: () => { setN(4); targetIndex = 7; decompose = true; decomposeToggle.checked = true; currentK = 0; subPhase = 'oracle'; renderState(); document.getElementById('panel-a')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); },
+  },
+  {
+    title: '3 · It’s a rotation',
+    body: `<p>Each full iteration rotates the state vector by <strong>2θ</strong> toward the |target⟩ axis (see the rotation view). Success probability is the squared height, <strong>sin²((2k+1)θ)</strong>.</p>
+<p>For N = 16, θ ≈ 14.5°, so the optimum is <strong>k* = 3</strong> iterations. We’re at k = 1 now — still climbing.</p>`,
+    apply: () => { setN(4); targetIndex = 7; decompose = false; decomposeToggle.checked = false; currentK = 1; subPhase = 'superposition'; renderState(); document.getElementById('panel-a')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); },
+  },
+  {
+    title: '4 · Overshoot',
+    body: `<p>We’ve jumped to <strong>k = 6 = 2·k*</strong>. Notice the probability has fallen back near zero: the vector rotated <em>past</em> the target axis.</p>
+<p>This is why “just run more iterations” is wrong — Grover needs the <em>right</em> count, not the most. The probability curve makes the oscillation obvious.</p>`,
+    apply: () => { setN(4); targetIndex = 7; decompose = false; decomposeToggle.checked = false; currentK = maxIterations(); subPhase = 'superposition'; renderState(); document.getElementById('panel-a')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); },
+  },
+  {
+    title: '5 · What it means for crypto',
+    body: `<p>The same math sets the cost of attacking AES. A brute-force key search over 2¹²⁸ keys needs ~2⁶⁴ Grover iterations — key length is effectively <strong>halved</strong>.</p>
+<p>But each iteration runs a full AES circuit coherently, so the real cost (≈2⁸² qubit-cycles for AES-128) is far higher. <strong>AES-256</strong> keeps a 2¹²⁸ margin and stays strong. Grover ≠ Shor: this is a quadratic dent, not an exponential break.</p>
+<p class="lesson-do">Explore the panels below, or try <em>Challenge mode</em> to test yourself.</p>`,
+    apply: () => { renderSignatureFeature(); document.getElementById('panel-c')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); },
+  },
+];
+
+function showLessonStage(): void {
+  const s = LESSON[lessonStage]!;
+  s.apply();
+  lessonBody.innerHTML = `<h3 class="lesson-title">${s.title}</h3>${s.body}`;
+  lessonProgress.textContent = `Stage ${lessonStage + 1} of ${LESSON.length}`;
+  lessonPrevBtn.disabled = lessonStage === 0;
+  lessonNextBtn.textContent = lessonStage === LESSON.length - 1 ? 'Finish ✓' : 'Next →';
+}
+
+function startLesson(): void {
+  lessonStage = 0;
+  stopAuto();
+  lessonStartBtn.style.display = 'none';
+  lessonNav.style.display = 'flex';
+  lessonBody.style.display = 'block';
+  showLessonStage();
+}
+
+function exitLesson(): void {
+  lessonStage = -1;
+  lessonStartBtn.style.display = '';
+  lessonNav.style.display = 'none';
+  lessonBody.style.display = 'none';
+  lessonBody.innerHTML = '';
+  lessonProgress.textContent = '';
+}
+
+lessonStartBtn.addEventListener('click', startLesson);
+lessonExitBtn.addEventListener('click', exitLesson);
+lessonPrevBtn.addEventListener('click', () => { if (lessonStage > 0) { lessonStage--; showLessonStage(); } });
+lessonNextBtn.addEventListener('click', () => {
+  if (lessonStage >= LESSON.length - 1) { exitLesson(); return; }
+  lessonStage++;
+  showLessonStage();
+});
+
+/* ── Interactive oracle cost budget ────────────────────── */
+const budgetSelector = $('#budget-selector') as HTMLSelectElement;
+function renderBudget(): void {
+  const bits = parseInt(budgetSelector.value, 10) as 128 | 192 | 256;
+  const a = analyzeKeySize(bits);
+  const c = aesQuantumCost(bits);
+  const iterExp = bits / 2;                         // ≈2^(n/2) Grover iterations
+  const perIterExp = c.circuitDepthExponent - iterExp; // cost of ONE oracle call
+  const box = $('#budget-box');
+  box.innerHTML =
+    `<div class="budget-grid">` +
+    `<div class="budget-row"><span>Grover iterations (oracle calls)</span><span class="bv">≈ 2^${iterExp}</span></div>` +
+    `<div class="budget-op">×</div>` +
+    `<div class="budget-row"><span>Cost per oracle call (one full AES-${bits} circuit, coherent)</span><span class="bv">≈ 2^${perIterExp} qubit-cycles</span></div>` +
+    `<div class="budget-op">=</div>` +
+    `<div class="budget-row total"><span>Total circuit depth (idealized lower bound)</span><span class="bv hot">≈ 2^${c.circuitDepthExponent} qubit-cycles</span></div>` +
+    `<div class="budget-row"><span>Logical qubits required</span><span class="bv">~${c.logicalQubits.toLocaleString()}</span></div>` +
+    `<div class="budget-row"><span>Practical threat</span><span class="bv ${a.practicalThreat === 'strong' ? 'ok' : 'warn'}">${a.practicalThreat.toUpperCase()}</span></div>` +
+    `</div>` +
+    `<p class="budget-note">${c.note}</p>` +
+    `<p class="budget-caveat">⚠ Lower-bound–style estimate (Grassl et al. 2016), <strong>not</strong> a wall-clock prediction. The headline “2^${iterExp}” counts <em>iterations</em>; the real work is iterations × cost-per-iteration. That gap is the difference between pop-science Grover and serious cost analysis.</p>`;
+}
+budgetSelector.addEventListener('change', renderBudget);
+renderBudget();
+
+/* ── Challenge mode ────────────────────────────────────── */
+interface Challenge { q: string; options: { label: string; correct: boolean }[]; explain: string; }
+const CHALLENGES: Challenge[] = [
+  {
+    q: 'For n = 5 (N = 32), about how many Grover iterations are optimal (k*)?',
+    options: [{ label: '2', correct: false }, { label: '4', correct: true }, { label: '16', correct: false }, { label: '32', correct: false }],
+    explain: 'k* = ⌊π/(4θ)⌋ with θ = asin(1/√32) ≈ 10.2°, giving ⌊4.44⌋ = 4. It scales like √N ≈ 5.7, not N.',
+  },
+  {
+    q: 'With sub-steps on, which step flips the target amplitude negative?',
+    options: [{ label: 'Oracle', correct: true }, { label: 'Diffusion', correct: false }, { label: 'Measurement', correct: false }],
+    explain: 'The oracle reflects across the non-target axis — it negates (phase-flips) the target amplitude. Diffusion then reflects about the mean.',
+  },
+  {
+    q: 'Under idealized Grover assumptions, the effective cost of attacking AES-256 is about…',
+    options: [{ label: '2^64', correct: false }, { label: '2^96', correct: false }, { label: '2^128', correct: true }],
+    explain: 'Grover halves the effective key length: 2^256 → 2^128. That remains far beyond any foreseeable capability, which is why NIST/CNSA recommends AES-256.',
+  },
+  {
+    q: 'Is Shor’s algorithm a threat to AES?',
+    options: [{ label: 'Yes — it breaks AES', correct: false }, { label: 'No — Shor targets public-key crypto', correct: true }],
+    explain: 'Shor breaks RSA/ECC/Diffie-Hellman (factoring & discrete log). AES is symmetric; only Grover applies, and only as a quadratic speedup.',
+  },
+  {
+    q: 'True or false: running more Grover iterations always increases success probability.',
+    options: [{ label: 'True', correct: false }, { label: 'False', correct: true }],
+    explain: 'False — past k* the state vector rotates beyond the target axis and probability decreases (overshoot). The probability curve oscillates.',
+  },
+];
+
+function renderChallenges(): void {
+  const list = $('#challenge-list');
+  list.innerHTML = '';
+  CHALLENGES.forEach((ch, i) => {
+    const card = document.createElement('div');
+    card.className = 'challenge-card';
+    const qEl = document.createElement('p');
+    qEl.className = 'challenge-q';
+    qEl.textContent = `${i + 1}. ${ch.q}`;
+    card.appendChild(qEl);
+
+    const opts = document.createElement('div');
+    opts.className = 'challenge-opts';
+    const feedback = document.createElement('div');
+    feedback.className = 'challenge-feedback';
+
+    ch.options.forEach((o) => {
+      const btn = document.createElement('button');
+      btn.className = 'btn challenge-opt';
+      btn.textContent = o.label;
+      btn.addEventListener('click', () => {
+        if (card.classList.contains('answered')) return;
+        card.classList.add('answered');
+        btn.classList.add(o.correct ? 'correct' : 'incorrect');
+        // Always reveal the correct option.
+        if (!o.correct) {
+          Array.from(opts.children).forEach((c, idx) => {
+            if (ch.options[idx]!.correct) c.classList.add('correct');
+          });
+        }
+        feedback.innerHTML = `<span class="${o.correct ? 'fb-right' : 'fb-wrong'}">${o.correct ? '✓ Correct.' : '✗ Not quite.'}</span> ${ch.explain}`;
+      });
+      opts.appendChild(btn);
+    });
+
+    card.appendChild(opts);
+    card.appendChild(feedback);
+    list.appendChild(card);
+  });
+}
+renderChallenges();
+
 /* ── Build HTML ────────────────────────────────────────── */
 function buildHTML(): string {
   const aesCards = ([128, 192, 256] as const).map(k => {
@@ -911,6 +1265,20 @@ Circuit depth: 2^${cost.circuitDepthExponent}</div>
     <p>Most explanations of Grover's algorithm focus on the headline \u221AN speedup. This demo shows the full probability oscillation: amplitude rises to a peak at k* iterations, then <em>decreases</em> if you keep going. This overshoot behavior reveals why Grover's algorithm requires precise iteration count — and why "just run more iterations" is counterproductive. It also shows why the practical cost of attacking AES is dominated by circuit depth per iteration, not the number of oracle calls alone.</p>
   </section>
 
+  <!-- Guided lesson -->
+  <section class="panel lesson-panel" id="lesson-panel" aria-labelledby="lesson-heading">
+    <h2 id="lesson-heading" class="panel-header">Guided Lesson</h2>
+    <p class="lesson-intro">New to Grover? Take the 5-step guided path — it drives the simulator below stage by stage, from the search problem to the crypto impact. The free-play controls stay available the whole time.</p>
+    <button class="btn lesson-start" id="lesson-start">▶ Start the guided lesson</button>
+    <div class="lesson-body" id="lesson-body" style="display:none"></div>
+    <div class="lesson-nav" id="lesson-nav" style="display:none">
+      <button class="btn" id="lesson-prev">← Prev</button>
+      <span class="lesson-progress" id="lesson-progress" aria-live="polite"></span>
+      <button class="btn" id="lesson-next">Next →</button>
+      <button class="btn lesson-exit" id="lesson-exit">Exit lesson</button>
+    </div>
+  </section>
+
   <!-- Panel A: Amplitude Visualizer -->
   <section class="panel" id="panel-a" aria-labelledby="panel-a-heading">
     <h1 id="panel-a-heading" class="panel-header">Grover's Algorithm &mdash; Amplitude Amplification</h1>
@@ -934,18 +1302,24 @@ Circuit depth: 2^${cost.circuitDepthExponent}</div>
         <input type="checkbox" id="decompose-toggle">
         Show oracle + diffusion sub-steps
       </label>
+      <label class="checkbox-label" for="predict-toggle">
+        <input type="checkbox" id="predict-toggle">
+        Prediction mode
+      </label>
     </div>
+
+    <div class="predict-prompt" id="predict-prompt" role="status" aria-live="polite" style="display:none"></div>
 
     <div class="iter-display" id="iter-display">Iteration: <span class="current">k = 0</span> / <span class="optimal">k* = 3</span></div>
     <div class="phase-label" id="phase-label" style="display:none"></div>
 
     <div class="viz-row">
-      <div class="viz-cell">
+      <div class="viz-cell" id="viz-rotation">
         <h3 class="viz-title">Grover rotation \u2014 why amplitude concentrates</h3>
         <canvas id="rotation-canvas" role="img" aria-label="Grover rotation diagram"></canvas>
         <p class="graph-caption">The state is a unit vector in the plane of |target&rang; (vertical) and all wrong answers (horizontal). Each iteration rotates it by 2&theta; toward the target axis; success probability is the squared height. Rotating past vertical is overshoot.</p>
       </div>
-      <div class="viz-cell">
+      <div class="viz-cell" id="viz-amplitudes">
         <h3 class="viz-title">Amplitudes \u2014 oracle flips, diffusion reflects</h3>
         <div class="bar-chart" id="bar-chart" role="img" aria-label="Signed amplitude bar chart"></div>
         <div class="bar-labels" id="bar-labels"></div>
@@ -954,9 +1328,23 @@ Circuit depth: 2^${cost.circuitDepthExponent}</div>
       </div>
     </div>
 
+    <div class="mental-models">
+      <div class="mental-head">
+        <span class="mental-label">Compare the mental models:</span>
+        <div class="mental-switch" role="group" aria-label="Mental model view">
+          <button class="mental-btn" data-view="algebra" aria-pressed="false">Algebra</button>
+          <button class="mental-btn active" data-view="geometry" aria-pressed="true">Geometry</button>
+          <button class="mental-btn" data-view="amplitudes" aria-pressed="false">Amplitudes</button>
+        </div>
+      </div>
+      <div class="mental-box" id="mental-box" aria-live="polite"></div>
+    </div>
+
     <div class="math-layer" id="math-layer" aria-label="Math layer: equations for the current state"></div>
 
     <div id="banner" class="banner"></div>
+
+    <div class="misconception" id="misconception" aria-live="polite" aria-label="Common misconception for the current step"></div>
 
     <div class="prob-curve-wrap">
       <canvas id="prob-canvas" aria-label="Probability vs iteration curve"></canvas>
@@ -1106,6 +1494,68 @@ systems. For symmetric systems, longer keys are sufficient.</p>
       <div class="scaling-row"><span class="scaling-label">Grover (idealized):</span><span class="scaling-value magenta">2^64 operations</span></div>
     </div>
     <p class="scaling-note">Even 2<sup>64</sup> operations is still enormous — roughly 18.4 quintillion. Under idealized assumptions, this is the best any quantum algorithm can achieve for unstructured search (BBBV lower bound). In practice, circuit depth and error correction make the real cost far higher.</p>
+  </section>
+
+  <!-- Interactive oracle cost budget -->
+  <section class="panel" id="panel-budget" aria-labelledby="budget-heading">
+    <h2 id="budget-heading" class="panel-header">The Real Cost of One Oracle Call</h2>
+    <p class="panel-intro">The headline “2^(n/2)” counts Grover <em>iterations</em>. The real attack cost is iterations × the cost of <em>each</em> oracle call — and every call runs a full AES circuit coherently inside the quantum computer. That separation is the difference between pop-science Grover and serious cost analysis.</p>
+    <div class="controls">
+      <label for="budget-selector">Key size:</label>
+      <select id="budget-selector" class="btn" style="min-width:120px">
+        <option value="128">AES-128</option>
+        <option value="192">AES-192</option>
+        <option value="256" selected>AES-256</option>
+      </select>
+    </div>
+    <div id="budget-box"></div>
+  </section>
+
+  <!-- Source-traceable assumptions -->
+  <section class="panel" id="panel-sources" aria-labelledby="sources-heading">
+    <h2 id="sources-heading" class="panel-header">Assumptions &amp; Sources</h2>
+    <p class="panel-intro">Every headline number here traces to a published result. The simulation is idealized math (see “About This Demo”); these are the references behind the claims.</p>
+    <table class="sources-table">
+      <caption class="sr-only">Claims in this demo and their published sources</caption>
+      <thead><tr><th scope="col">Claim</th><th scope="col">Source</th></tr></thead>
+      <tbody>
+        <tr><td>Grover search uses ≈√N oracle queries (quadratic speedup).</td><td>Grover, <em>A fast quantum mechanical algorithm for database search</em>, STOC 1996.</td></tr>
+        <tr><td>≈√N is optimal — no quantum algorithm searches unstructured data faster.</td><td>Bennett, Bernstein, Brassard &amp; Vazirani (BBBV), <em>SIAM J. Computing</em>, 1997.</td></tr>
+        <tr><td>AES logical-qubit counts and circuit-depth (≈2^82 / 2^114 / 2^151).</td><td>Grassl, Langenberg, Roetteler &amp; Steinwandt, <em>Applying Grover’s algorithm to AES</em>, PQCrypto 2016.</td></tr>
+        <tr><td>AES-256 / SHA-512 recommended for post-quantum use.</td><td>NIST SP 800-57; NSA CNSA 2.0 (2022).</td></tr>
+        <tr><td>Quantum collision search bound ≈2^(n/3) (distinct from preimage).</td><td>Brassard, Høyer &amp; Tapp (BHT), 1998.</td></tr>
+        <tr><td>Shor breaks RSA / ECC / Diffie-Hellman (not symmetric crypto).</td><td>Shor, <em>Polynomial-time algorithms for prime factorization and discrete logarithms</em>, 1994/1997.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Challenge mode -->
+  <section class="panel" id="panel-challenge" aria-labelledby="challenge-heading">
+    <h2 id="challenge-heading" class="panel-header">Challenge Mode</h2>
+    <p class="panel-intro">Test yourself. Each answer is immediate and explained — use the simulator above if you need to check.</p>
+    <div id="challenge-list"></div>
+  </section>
+
+  <!-- Glossary -->
+  <section class="panel" id="panel-glossary" aria-labelledby="glossary-heading">
+    <h2 id="glossary-heading" class="panel-header">Glossary</h2>
+    <p class="panel-intro">Terse definitions, with the distinctions that trip people up.</p>
+    <dl class="glossary">
+      <dt>Amplitude</dt><dd>A signed number attached to each state. It can be <em>negative</em> — that’s what the oracle exploits. Not directly observable.</dd>
+      <dt>Probability</dt><dd>Amplitude <em>squared</em> — what you actually get on measurement. Doubling an amplitude quadruples its probability.</dd>
+      <dt>Phase</dt><dd>The sign of an amplitude (its angle, in general). The oracle changes phase, not magnitude.</dd>
+      <dt>Oracle</dt><dd>A black box that recognizes the target and flips its phase. It does <em>not</em> output the answer.</dd>
+      <dt>Diffusion operator</dt><dd>Reflection of every amplitude about their mean. It amplifies whatever the oracle marked.</dd>
+      <dt>Marked item (target)</dt><dd>The state the oracle recognizes — e.g. the correct key.</dd>
+      <dt>Query complexity</dt><dd>Number of oracle calls an algorithm needs. Grover’s is O(√N).</dd>
+      <dt>Circuit depth</dt><dd>Length of the longest sequential chain of gates. Dominates real attack cost — query count alone understates it.</dd>
+      <dt>Logical qubit</dt><dd>An error-corrected qubit built from many noisy physical qubits.</dd>
+      <dt>Error correction</dt><dd>Encoding that protects logical qubits from noise. Adds large overhead — not modeled in this demo.</dd>
+      <dt>Preimage resistance</dt><dd>Hardness of finding an input for a given hash output. Grover takes it 2ⁿ → 2^(n/2).</dd>
+      <dt>Collision resistance</dt><dd>Hardness of finding two inputs with the same output. Classical 2^(n/2); quantum BHT 2^(n/3), but memory-heavy — don’t confuse with the preimage rule.</dd>
+      <dt>Symmetric cryptography</dt><dd>One shared key (AES). Only quadratically weakened by Grover.</dd>
+      <dt>Public-key cryptography</dt><dd>Separate public/private keys (RSA, ECC). Broken by Shor — Grover doesn’t apply.</dd>
+    </dl>
   </section>
 
   <footer class="scripture-footer">

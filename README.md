@@ -21,6 +21,20 @@ Adjust the qubit count (n = 2–20) to resize the search space, step through Gro
 
 You can deep-link a specific state with query parameters — e.g. `?steps=3` jumps to the optimal iteration, and `?sub=1&steps=1` opens at the oracle sub-step.
 
+### Learning instrument, not just a visualization
+
+Beyond free-play, the demo is built to teach actively:
+
+- **Guided lesson** — a 5-stage path (search setup → oracle + diffusion → rotation model → overshoot → crypto impact) that drives the simulator stage by stage.
+- **Prediction mode** — commit a guess (will probability rise, fall, or hold?) before each Step reveals the answer.
+- **Reactive misconception panel** — surfaces the right correction at the moment you're likely to form the wrong idea (oracle ≠ "checks all keys", overshoot, k* ≠ certainty, Grover ≠ Shor).
+- **Compare the mental models** — toggle the *same* overshoot fact across algebra, geometry, and amplitude views.
+- **Measurement simulator** — "Measure ×100" samples the current state so probability ≠ certainty becomes concrete.
+- **Math layer** — the live equations (θ, sin²((2k+1)θ), k*) with the current numbers plugged in.
+- **Oracle cost budget** — separates the headline 2^(n/2) *iterations* from the cost *per* oracle call (full AES circuit), with logical-qubit and depth figures.
+- **Challenge mode** — short questions with immediate, explained feedback.
+- **Assumptions & sources** table and a local **glossary** distinguishing nearby terms (amplitude vs probability, preimage vs collision, symmetric vs public-key).
+
 ## How to Run Locally
 
 ```bash
