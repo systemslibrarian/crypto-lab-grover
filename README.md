@@ -15,13 +15,45 @@ Grover's algorithm (Lov Grover, 1996) is a quantum search algorithm that finds a
 
 ## Live Demo
 
-[https://systemslibrarian.github.io/crypto-lab-grover/](https://systemslibrarian.github.io/crypto-lab-grover/)
+**[systemslibrarian.github.io/crypto-lab-grover](https://systemslibrarian.github.io/crypto-lab-grover/)**
 
 Adjust the qubit count (n = 2–20) to resize the search space, step through Grover iterations one at a time or auto-run, and watch the state vector rotate toward the target while the signed amplitude bars concentrate. Enable "Show oracle + diffusion sub-steps" to walk each iteration as its two reflections. The demo also shows AES-128/192/256 quantum impact analysis with an interactive key-size selector, a hash function security table (MD5 through SHA3-512), and a classical-vs-quantum search race animation.
 
 You can deep-link a specific state with query parameters — e.g. `?steps=3` jumps to the optimal iteration, and `?sub=1&steps=1` opens at the oracle sub-step.
 
-### Learning instrument, not just a visualization
+## What Can Go Wrong
+
+- **Reading the key-halving as literal feasibility** — "AES-128 → 2^64" is an idealized query count; the per-iteration oracle is a full AES circuit and Grover is inherently sequential, so the real cost is far higher and AES-128 is not practically broken by it.
+- **Assuming Grover parallelizes the depth away** — it gives at most a quadratic speedup, and splitting it across machines splits the √N benefit; you cannot brute-force the circuit depth down the way classical search parallelizes.
+- **Running too many iterations** — past k* = π/4·√N the state rotates past the target and success probability falls (overshoot); more iterations is not better.
+- **Applying it to the wrong primitive** — Grover threatens symmetric keys and hash preimages, not RSA/ECC/DH (that is Shor). Conflating the two misstates the risk.
+- **Treating O(√N) as beatable** — the BBBV bound proves no quantum search does better; assuming a future faster generic search is unfounded.
+
+## Real-World Usage
+
+- **Post-quantum symmetric sizing** — NIST CNSA 2.0 recommends AES-256 (and larger hash outputs) so the halved effective strength still clears the security bar.
+- **Hash security margins** — Grover halves preimage resistance, so SHA-256 still offers ~128-bit preimage security against a quantum attacker; output sizes are chosen with this in mind.
+- **Quantum resource estimation** — Grassl et al. and follow-up work estimate the qubits and circuit depth to run Grover on AES, feeding standards decisions.
+- **Migration planning** — symmetric primitives mostly need larger parameters rather than replacement, unlike public-key crypto, which Shor forces onto post-quantum schemes entirely.
+
+## How to Run Locally
+
+```bash
+git clone https://github.com/systemslibrarian/crypto-lab-grover
+cd crypto-lab-grover
+npm install
+npm run dev
+```
+
+## Related Demos
+
+- [crypto-lab-shor](https://systemslibrarian.github.io/crypto-lab-shor/) — the complementary quantum threat: Shor breaks public-key (RSA/ECC) where Grover only dents symmetric.
+- [crypto-lab-harvest-vault](https://systemslibrarian.github.io/crypto-lab-harvest-vault/) — harvest-now-decrypt-later and the Q-Day timeline this speedup feeds into.
+- [crypto-lab-aes-modes](https://systemslibrarian.github.io/crypto-lab-aes-modes/) — the AES modes whose key sizes Grover pressures.
+- [crypto-lab-hash-zoo](https://systemslibrarian.github.io/crypto-lab-hash-zoo/) — the hash functions whose preimage resistance Grover halves.
+- [crypto-lab-bb84](https://systemslibrarian.github.io/crypto-lab-bb84/) — quantum key distribution, the quantum-defense side of the story.
+
+## Learning Instrument
 
 Beyond free-play, the demo is built to teach actively:
 
@@ -37,21 +69,6 @@ Beyond free-play, the demo is built to teach actively:
 
 For classroom use, see the [teaching guide](docs/TEACHING.md) — lesson plans (15- and 45-minute), discussion questions, a printable worksheet, and the challenge-mode answer key.
 
-## How to Run Locally
-
-```bash
-git clone https://github.com/systemslibrarian/crypto-lab-grover
-cd crypto-lab-grover
-npm install
-npm run dev
-```
-
-## Part of the Crypto-Lab Suite
-
-> One of 60+ live browser demos at
-> [systemslibrarian.github.io/crypto-lab](https://systemslibrarian.github.io/crypto-lab/)
-> — spanning Atbash (600 BCE) through NIST FIPS 203/204/205 (2024).
-
 ## Sources
 
 1. **Grover, L. K.** (1996). "A fast quantum mechanical algorithm for database search." *Proceedings of the 28th Annual ACM Symposium on Theory of Computing*, pp. 212–219.
@@ -62,4 +79,6 @@ npm run dev
 
 ---
 
-*"Whether you eat or drink, or whatever you do, do all to the glory of God." — 1 Corinthians 10:31*
+*One of 60+ browser demos in the [Crypto Lab](https://crypto-lab.systemslibrarian.dev/) suite.*
+
+*"So whether you eat or drink or whatever you do, do it all for the glory of God." — 1 Corinthians 10:31*
