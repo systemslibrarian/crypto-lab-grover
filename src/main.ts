@@ -1218,31 +1218,6 @@ Circuit depth: 2^${cost.circuitDepthExponent}</div>
 
   return `
 <a href="#panel-a" class="skip-link">Skip to main content</a>
-<header class="cl-header">
-  <div class="cl-header-left">
-    <div class="cl-badge">CL</div>
-    <div class="cl-header-text">
-      <span class="cl-title">CRYPTO LAB</span>
-      <a class="cl-sub"
-         href="https://systemslibrarian.dev"
-         target="_blank"
-         rel="noopener">
-        systemslibrarian.dev
-      </a>
-    </div>
-  </div>
-  <nav class="cl-header-nav">
-    <a class="cl-nav-btn"
-       href="https://github.com/systemslibrarian/crypto-lab-grover"
-       target="_blank"
-       rel="noopener">
-      GitHub
-    </a>
-    <button class="cl-theme-toggle" id="themeToggle" aria-label="Toggle theme">
-      ☀
-    </button>
-  </nav>
-</header>
 
 <main class="app">
 
@@ -1574,15 +1549,24 @@ systems. For symmetric systems, longer keys are sufficient.</p>
   </section>
 
   <footer class="scripture-footer">
+    <p>Related demos:
+      <a href="https://systemslibrarian.github.io/crypto-lab-shor/" target="_blank" rel="noopener">crypto-lab-shor</a> ·
+      <a href="https://systemslibrarian.github.io/crypto-lab-harvest-vault/" target="_blank" rel="noopener">crypto-lab-harvest-vault</a> ·
+      <a href="https://systemslibrarian.github.io/crypto-lab-aes-modes/" target="_blank" rel="noopener">crypto-lab-aes-modes</a> ·
+      <a href="https://systemslibrarian.github.io/crypto-lab-hash-zoo/" target="_blank" rel="noopener">crypto-lab-hash-zoo</a> ·
+      <a href="https://systemslibrarian.github.io/crypto-lab-bb84/" target="_blank" rel="noopener">crypto-lab-bb84</a></p>
     <p>So whether you eat or drink or whatever you do, do it all for the glory of God. — 1 Corinthians 10:31</p>
   </footer>
 </main>`;
 }
 
 /* ── Theme toggle ──────────────────────────────────────── */
-const themeBtn = $('#themeToggle');
+// The shared crypto-lab top bar (#cl-theme-toggle) is the page's theme control;
+// this lab's own toggle was removed with the duplicate header, so guard for null.
+const themeBtn = document.querySelector<HTMLElement>('#themeToggle');
 
 function syncThemeButton(): void {
+  if (!themeBtn) return;
   const current = document.documentElement.getAttribute('data-theme') || 'dark';
   themeBtn.textContent = current === 'dark' ? '☀' : '🌙';
   themeBtn.setAttribute('aria-label', current === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
@@ -1590,7 +1574,7 @@ function syncThemeButton(): void {
 
 syncThemeButton();
 
-themeBtn.addEventListener('click', () => {
+themeBtn?.addEventListener('click', () => {
   const current = document.documentElement.getAttribute('data-theme') || 'dark';
   const next = current === 'dark' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', next);
