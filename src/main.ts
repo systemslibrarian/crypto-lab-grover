@@ -1221,6 +1221,18 @@ Circuit depth: 2^${cost.circuitDepthExponent}</div>
 
 <main class="app">
 
+  <header class="cl-hero">
+    <div class="cl-hero-main">
+      <h1 class="cl-hero-title">Grover's Algorithm</h1>
+      <p class="cl-hero-sub">Quantum search · amplitude amplification · O(&radic;N)</p>
+      <p class="cl-hero-desc">Step through Grover's search as a rotation toward the target: watch the amplitude climb to a peak at k* iterations, then overshoot back down if you run too far.</p>
+    </div>
+    <aside class="cl-hero-why" aria-label="Why it matters">
+      <span class="cl-hero-why-label">WHY IT MATTERS</span>
+      <p class="cl-hero-why-text">Grover gives only a quadratic speedup and touches just symmetric primitives &mdash; halving the effective bits of AES and hashes, not breaking them. That is why AES-256 stays safe and post-quantum worry centers on Shor, not Grover.</p>
+    </aside>
+  </header>
+
   <!-- Reality / Limits Panel -->
   <section class="reality-panel" id="reality-panel" aria-label="About this demo">
     <h2>About This Demo</h2>
@@ -1265,7 +1277,7 @@ Circuit depth: 2^${cost.circuitDepthExponent}</div>
 
   <!-- Panel A: Amplitude Visualizer -->
   <section class="panel" id="panel-a" aria-labelledby="panel-a-heading">
-    <h1 id="panel-a-heading" class="panel-header">Grover's Algorithm &mdash; Amplitude Amplification</h1>
+    <h2 id="panel-a-heading" class="panel-header">Grover's Algorithm &mdash; Amplitude Amplification</h2>
 
     <div class="controls">
       <label for="n-slider">Search space n qubits:</label>
