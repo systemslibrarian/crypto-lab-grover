@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "smoke": "npm run build && node smoke.mjs",
     "test:a11y": "playwright test",
     "deploy": "npm run build && gh-pages -d dist"
@@ -17,6 +19,7 @@
     "gh-pages": "^6.3.0",
     "playwright": "^1.61.1",
     "typescript": "~6.0.2",
-    "vite": "^8.0.4"
+    "vite": "^8.0.4",
+    "vitest": "^3.2.7"
   }
 }

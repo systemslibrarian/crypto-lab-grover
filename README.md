@@ -45,6 +45,15 @@ npm install
 npm run dev
 ```
 
+### Tests
+
+```bash
+npm test        # unit tests for the DOM-free core math (Vitest)
+npm run test:a11y   # WCAG A/AA accessibility gate (Playwright + axe-core)
+```
+
+The unit suite pins the classical simulation to its reference math: `θ = asin(1/√N)`, the optimal iteration count `k* = ⌊π/(4θ)⌋`, unit-norm amplitudes, the closed form `sin²((2k+1)θ)`, and the overshoot past `k*`. It also verifies the oracle + diffusion **sub-step decomposition agrees with the closed form to floating-point precision** (the oracle flips the target amplitude negative; diffusion is exactly a reflection about the mean and reproduces the state after `k+1` iterations) — the claim the UI narrates, now enforced in code rather than only in prose. The supported qubit range `n = 2..20` is a single shared contract across the README, the UI slider, and input validation.
+
 ## Related Demos
 
 - [crypto-lab-shor](https://systemslibrarian.github.io/crypto-lab-shor/) — the complementary quantum threat: Shor breaks public-key (RSA/ECC) where Grover only dents symmetric.

@@ -11,20 +11,33 @@ export interface GroverState {
   truncated: boolean;
 }
 
+/**
+ * Supported qubit range for the simulator. This is the demo's public contract:
+ * the UI slider, the README, and the core math all share these bounds. The
+ * lower bound is 2 (so N >= 4 and the non-target subspace N-1 is non-trivial);
+ * the upper bound is 20 (N up to ~10^6, the largest space the amplitude views
+ * meaningfully render).
+ */
+export const MIN_QUBITS = 2;
+export const MAX_QUBITS = 20;
+
 function assertFiniteInteger(value: number, name: string): void {
   if (!Number.isFinite(value) || !Number.isInteger(value)) {
     throw new Error(`${name} must be a finite integer.`);
   }
 }
 
-function validateInputs(n: number, targetIndex: number, iteration: number): number {
+function assertQubitRange(n: number): void {
   assertFiniteInteger(n, 'n');
+  if (n < MIN_QUBITS || n > MAX_QUBITS) {
+    throw new Error(`n must be between ${MIN_QUBITS} and ${MAX_QUBITS}.`);
+  }
+}
+
+function validateInputs(n: number, targetIndex: number, iteration: number): number {
+  assertQubitRange(n);
   assertFiniteInteger(targetIndex, 'targetIndex');
   assertFiniteInteger(iteration, 'iteration');
-
-  if (n < 1 || n > 30) {
-    throw new Error('n must be between 1 and 30.');
-  }
 
   if (iteration < 0) {
     throw new Error('iteration must be >= 0.');
@@ -39,7 +52,12 @@ function validateInputs(n: number, targetIndex: number, iteration: number): numb
   return N;
 }
 
-function optimalIterationsForN(N: number): number {
+/**
+ * Optimal number of Grover iterations k* = ⌊π / (4θ)⌋ for a space of size N,
+ * where sin(θ) = 1/√N. This is the rotation count that lands the state vector
+ * closest to the target axis; running past it overshoots.
+ */
+export function optimalIterationsForN(N: number): number {
   const theta = Math.asin(1 / Math.sqrt(N));
   return Math.floor(Math.PI / (4 * theta));
 }
@@ -53,11 +71,7 @@ function optimalIterationsForN(N: number): number {
  * sin(theta) = 1 / sqrt(N) where N = 2^n.
  */
 export function groverTheta(n: number): number {
-  assertFiniteInteger(n, 'n');
-  if (n < 1 || n > 30) {
-    throw new Error('n must be between 1 and 30.');
-  }
-
+  assertQubitRange(n);
   const N = 2 ** n;
   return Math.asin(1 / Math.sqrt(N));
 }
@@ -244,10 +258,7 @@ export function simulateProbabilityCurve(n: number): Array<{
   probability: number;
   isOptimal: boolean;
 }> {
-  assertFiniteInteger(n, 'n');
-  if (n < 1 || n > 30) {
-    throw new Error('n must be between 1 and 30.');
-  }
+  assertQubitRange(n);
 
   const N = 2 ** n;
   const theta = groverTheta(n);
@@ -290,8 +301,8 @@ export async function classicalSearch(N: number): Promise<{
   expected: number;
 }> {
   assertFiniteInteger(N, 'N');
-  if (N < 2 || N > 2 ** 30) {
-    throw new Error('N must be between 2 and 2^30.');
+  if (N < 2 || N > 2 ** MAX_QUBITS) {
+    throw new Error(`N must be between 2 and 2^${MAX_QUBITS}.`);
   }
 
   const queriesUsed = cryptoRandomInt(N) + 1;
@@ -305,7 +316,7 @@ export async function classicalSearch(N: number): Promise<{
  * Grover query count estimate as 2*k* + 1.
  */
 export function groverQueryCount(n: number): number {
-  const theta = groverTheta(n);
-  const kStar = Math.floor(Math.PI / (4 * theta));
+  assertQubitRange(n);
+  const kStar = optimalIterationsForN(2 ** n);
   return 2 * kStar + 1;
 }
