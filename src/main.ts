@@ -1101,7 +1101,7 @@ const CHALLENGES: Challenge[] = [
   {
     q: 'For n = 5 (N = 32), about how many Grover iterations are optimal (k*)?',
     options: [{ label: '2', correct: false }, { label: '4', correct: true }, { label: '16', correct: false }, { label: '32', correct: false }],
-    explain: 'k* = ⌊π/(4θ)⌋ with θ = asin(1/√32) ≈ 10.2°, giving ⌊4.44⌋ = 4. It scales like √N ≈ 5.7, not N.',
+    explain: 'k* = ⌊π/(4θ)⌋ with θ = asin(1/√32) ≈ 10.2°, giving ⌊4.42⌋ = 4. It scales like √N ≈ 5.7, not N.',
   },
   {
     q: 'With sub-steps on, which step flips the target amplitude negative?',

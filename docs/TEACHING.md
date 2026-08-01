@@ -76,7 +76,7 @@ The app surfaces these reactively; here they are for the instructor:
 
 ## Challenge-mode answer key
 
-1. **k\* for n = 5 (N = 32): ≈ 4.** k* = ⌊π/(4θ)⌋, θ = asin(1/√32) ≈ 10.2°, so ⌊4.44⌋ = 4. Scales like √N ≈ 5.7, not N.
+1. **k\* for n = 5 (N = 32): ≈ 4.** k* = ⌊π/(4θ)⌋, θ = asin(1/√32) ≈ 10.2°, so ⌊4.42⌋ = 4. Scales like √N ≈ 5.7, not N.
 2. **Which step flips the target negative? Oracle.** It reflects across the non-target axis (phase flip). Diffusion then reflects about the mean.
 3. **Idealized Grover cost for AES-256: ≈ 2¹²⁸.** Grover halves effective key length (2²⁵⁶ → 2¹²⁸) — still far beyond reach.
 4. **Is Shor a threat to AES? No.** Shor targets public-key (RSA/ECC/DH). AES is symmetric; only Grover applies, quadratically.
