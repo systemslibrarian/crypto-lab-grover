@@ -4,6 +4,10 @@
 :root{
   color-scheme:dark; /* native widgets (selects, scrollbars) match the dark default theme */
   --bg:#0a0e1a;--surface:#111827;--border:#1e293b;
+  /* Control boundaries only. Buttons/selects are filled with --surface, the same
+     colour as the .panel they sit in (1:1), so their border is the sole boundary
+     and WCAG 2.1 SC 1.4.11 requires 3:1. --border stays for decorative rules. */
+  --border-strong:#4c6795;
   --text:#e2e8f0;--text-dim:#94a3b8;--mono:'Courier New',Courier,monospace;
   --magenta:#ff00ff;--magenta-glow:0 0 12px #ff00ff88;
   --on-magenta:#0a0e1a; /* white on #ff00ff is only 3.1:1 — dark ink clears AA (6.1:1) */
@@ -14,7 +18,7 @@
 
 [data-theme="light"]{
   color-scheme:light;
-  --bg:#f1f5f9;--surface:#ffffff;--border:#cbd5e1;
+  --bg:#f1f5f9;--surface:#ffffff;--border:#cbd5e1;--border-strong:#7b94b3;
   --text:#0f172a;--text-dim:#475569;
   --magenta:#9b0099;--magenta-glow:0 0 8px #9b009966;
   --on-magenta:#fff; /* white on #9b0099 is 7.4:1 */
@@ -40,7 +44,7 @@ h1{font-family:var(--mono);font-size:clamp(1rem,3vw,1.5rem);text-transform:upper
 .controls input[type="range"]{accent-color:var(--magenta);width:140px}
 .controls .value{font-family:var(--mono);font-size:.85rem;color:var(--magenta);min-width:5rem}
 .btn{font-family:var(--mono);font-size:.8rem;padding:.6rem 1rem;min-height:44px;min-width:44px;
-  background-color:var(--surface);border:1px solid var(--border);color:var(--text);
+  background-color:var(--surface);border:1px solid var(--border-strong);color:var(--text);
   border-radius:var(--radius);cursor:pointer;transition:border-color .2s}
 .btn:hover{border-color:var(--magenta)}
 .btn:focus-visible{outline:2px solid var(--magenta);outline-offset:2px}
@@ -297,8 +301,8 @@ details summary:focus-visible{outline:2px solid var(--magenta);outline-offset:2p
 .mental-models{margin:1rem 0}
 .mental-head{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;margin-bottom:.5rem}
 .mental-label{font-family:var(--mono);font-size:.8rem;color:var(--text-dim)}
-.mental-switch{display:inline-flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
-.mental-btn{background-color:var(--surface);color:var(--text-dim);border:none;border-right:1px solid var(--border);padding:.4rem .8rem;min-height:44px;font-family:var(--mono);font-size:.78rem;cursor:pointer}
+.mental-switch{display:inline-flex;border:1px solid var(--border-strong);border-radius:var(--radius);overflow:hidden}
+.mental-btn{background-color:var(--surface);color:var(--text-dim);border:none;border-right:1px solid var(--border-strong);padding:.4rem .8rem;min-height:44px;font-family:var(--mono);font-size:.78rem;cursor:pointer}
 .mental-btn:last-child{border-right:none}
 .mental-btn:hover{color:var(--text)}
 .mental-btn.active{background-color:var(--magenta);color:var(--on-magenta)}
