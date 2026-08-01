@@ -56,8 +56,8 @@ const QUBIT_COSTS: Record<128 | 192 | 256, { logicalQubits: number; circuitDepth
   },
   256: {
     logicalQubits: 6681,
-    circuitDepthExponent: 151,
-    note: 'AES-256 Grover attack requires 2^128 iterations each with a deep AES-256 circuit. Total cost of 2^151 logical qubit-cycles is far beyond foreseeable quantum capability.',
+    circuitDepthExponent: 146,
+    note: 'AES-256 Grover attack requires 2^128 iterations each with a deep AES-256 circuit. Total full depth of ~2^146 logical qubit-cycles is far beyond foreseeable quantum capability. (Grassl et al. report full depth 1.57 * 2^145 for AES-256; their total gate count is a separate, larger figure of ~2^151.)',
   },
 };
 

@@ -919,7 +919,7 @@ const AES_SIGNATURE_DATA: Record<number, {
     classical: '2^256',
     grover: '2^128',
     reality: 'Still infeasible — 2^128 operations remains far beyond any foreseeable capability.',
-    explanation: `Grover's algorithm reduces brute-force search from 2^256 to ~2^128 operations under idealized assumptions.\n\nEven with a quadratic speedup, 2^128 operations is an astronomically large number:\n• quantum circuit depth (~2^151 logical qubit-cycles)\n• oracle construction cost (AES-256 has the deepest circuit of all three)\n• error correction requirements (~6,681 logical qubits needed)\n\nAES-256 is recommended by NIST (CNSA 2.0) as the standard for post-quantum symmetric encryption. The 2^128 effective security margin is considered strong for the foreseeable future.`,
+    explanation: `Grover's algorithm reduces brute-force search from 2^256 to ~2^128 operations under idealized assumptions.\n\nEven with a quadratic speedup, 2^128 operations is an astronomically large number:\n• quantum circuit depth (~2^146 logical qubit-cycles)\n• oracle construction cost (AES-256 has the deepest circuit of all three)\n• error correction requirements (~6,681 logical qubits needed)\n\nAES-256 is recommended by NIST (CNSA 2.0) as the standard for post-quantum symmetric encryption. The 2^128 effective security margin is considered strong for the foreseeable future.`,
   },
 };
 
@@ -1519,7 +1519,7 @@ systems. For symmetric systems, longer keys are sufficient.</p>
       <tbody>
         <tr><td>Grover search uses ≈√N oracle queries (quadratic speedup).</td><td>Grover, <em>A fast quantum mechanical algorithm for database search</em>, STOC 1996.</td></tr>
         <tr><td>≈√N is optimal — no quantum algorithm searches unstructured data faster.</td><td>Bennett, Bernstein, Brassard &amp; Vazirani (BBBV), <em>SIAM J. Computing</em>, 1997.</td></tr>
-        <tr><td>AES logical-qubit counts and circuit-depth (≈2^82 / 2^114 / 2^151).</td><td>Grassl, Langenberg, Roetteler &amp; Steinwandt, <em>Applying Grover’s algorithm to AES</em>, PQCrypto 2016.</td></tr>
+        <tr><td>AES logical-qubit counts and circuit-depth (≈2^82 / 2^114 / 2^146).</td><td>Grassl, Langenberg, Roetteler &amp; Steinwandt, <em>Applying Grover’s algorithm to AES</em>, PQCrypto 2016.</td></tr>
         <tr><td>AES-256 / SHA-512 recommended for post-quantum use.</td><td>NIST SP 800-57; NSA CNSA 2.0 (2022).</td></tr>
         <tr><td>Quantum collision search bound ≈2^(n/3) (distinct from preimage).</td><td>Brassard, Høyer &amp; Tapp (BHT), 1998.</td></tr>
         <tr><td>Shor breaks RSA / ECC / Diffie-Hellman (not symmetric crypto).</td><td>Shor, <em>Polynomial-time algorithms for prime factorization and discrete logarithms</em>, 1994/1997.</td></tr>
