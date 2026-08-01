@@ -1343,7 +1343,7 @@ Circuit depth: 2^${cost.circuitDepthExponent}</div>
     <div class="misconception" id="misconception" aria-live="polite" aria-label="Common misconception for the current step"></div>
 
     <div class="prob-curve-wrap">
-      <canvas id="prob-canvas" aria-label="Probability vs iteration curve"></canvas>
+      <canvas id="prob-canvas" role="img" aria-label="Probability vs iteration curve"></canvas>
       <p class="graph-caption">Grover's success probability increases toward an optimum, then decreases if applied too many times. This oscillation is inherent to amplitude amplification.</p>
     </div>
 
