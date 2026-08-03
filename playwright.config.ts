@@ -16,12 +16,12 @@ export default defineConfig({
     // Build first: `vite preview` only serves the existing dist/, so without
     // this a broken build leaves the last good bundle in place and the suite
     // passes green against source that no longer compiles.
-    command: 'npm run build && npm run preview -- --port 4221 --strictPort',
-    url: 'http://localhost:4221/crypto-lab-grover/',
+    command: 'npm run build && npm run preview -- --port 4645 --strictPort',
+    url: 'http://localhost:4645/crypto-lab-grover/',
     reuseExistingServer: !process.env.CI,
   },
   use: {
-    baseURL: 'http://localhost:4221/crypto-lab-grover/',
+    baseURL: 'http://localhost:4645/crypto-lab-grover/',
     colorScheme: 'dark',
   },
 });
