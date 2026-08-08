@@ -60,7 +60,15 @@ h1{font-family:var(--mono);font-size:clamp(1rem,3vw,1.5rem);text-transform:upper
 .bar-chart .bar.non-target{background-color:var(--dim-blue)}
 .bar-baseline{position:absolute;left:0;right:0;top:50%;height:0;border-top:1px solid var(--text-dim);opacity:.55;z-index:1;pointer-events:none}
 .bar-mean{position:absolute;left:0;right:0;height:0;border-top:1px dashed var(--gold);z-index:3;pointer-events:none;transition:top .45s ease}
-.bar-mean-tag{position:absolute;right:2px;top:-1.15em;font-family:var(--mono);font-size:.55rem;color:var(--gold);letter-spacing:.05em}
+/* The mean line can sit at either extreme of the chart (at overshoot the mean
+   amplitude IS the largest magnitude, so the line lands on 100%). The tag was
+   pinned above the line unconditionally, so at that extreme it hung below the
+   chart's content box — and because .bar-chart declares `overflow-x: auto`,
+   which forces overflow-y to auto too, the word "mean" was clipped into a 2px
+   scroll region with no keyboard route. Sit above the line by default and flip
+   below it (via .flip, set in renderBars) when the line is near the top. */
+.bar-mean-tag{position:absolute;right:2px;bottom:1px;font-family:var(--mono);font-size:.55rem;color:var(--gold);letter-spacing:.05em}
+.bar-mean-tag.flip{bottom:auto;top:1px}
 .bar-toobig{font-family:var(--mono);font-size:.75rem;color:var(--text-dim);padding:1rem;align-self:center}
 .bar-labels{display:flex;gap:2px;flex-wrap:wrap;font-family:var(--mono);font-size:.55rem;color:var(--text-dim);overflow-x:auto}
 .bar-labels span{flex:1;min-width:4px;max-width:32px;text-align:center;overflow:hidden;text-overflow:ellipsis}
@@ -76,11 +84,11 @@ h1{font-family:var(--mono);font-size:clamp(1rem,3vw,1.5rem);text-transform:upper
 .phase-label.diffusion{color:var(--gold);border-color:var(--gold)}
 
 /* ── Visualisation row: rotation view beside amplitude bars ─ */
-.viz-row{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin:.5rem 0 1rem}
+.viz-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1.25rem;margin:.5rem 0 1rem}
 .viz-cell{min-width:0}
 .viz-title{font-family:var(--mono);font-size:.72rem;font-weight:400;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);margin-bottom:.5rem}
 #rotation-canvas{width:100%;height:300px;display:block;border:1px solid var(--border);border-radius:var(--radius);background-color:var(--bg)}
-@media(max-width:768px){.viz-row{grid-template-columns:1fr}}
+@media(max-width:768px){.viz-row{grid-template-columns:minmax(0,1fr)}}
 
 /* ── Amplitude values ──────────────────────────────────── */
 .amp-values{font-family:var(--mono);font-size:.78rem;line-height:1.8;color:var(--text-dim);margin-top:.75rem;white-space:pre-wrap}
@@ -102,7 +110,7 @@ h1{font-family:var(--mono);font-size:clamp(1rem,3vw,1.5rem);text-transform:upper
 .banner.overshoot{display:block;background-color:#ffd70011;border:1px solid var(--amber);color:var(--amber)}
 
 /* ── Race panel ────────────────────────────────────────── */
-.race-columns{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.race-columns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1rem}
 .race-col h3{font-family:var(--mono);font-size:.78rem;text-transform:uppercase;margin-bottom:.5rem;color:var(--text-dim)}
 .race-col .race-stats{font-family:var(--mono);font-size:.72rem;color:var(--text-dim);line-height:1.8;white-space:pre-wrap}
 .race-bar-wrap{height:1.2rem;background-color:var(--bg);border-radius:var(--radius);overflow:hidden;margin:.4rem 0}
@@ -122,7 +130,7 @@ h1{font-family:var(--mono);font-size:clamp(1rem,3vw,1.5rem);text-transform:upper
 /* ── Measurement simulator ─────────────────────────────── */
 .measure-box{margin:.25rem 0 1rem}
 .measure-caption{font-family:var(--mono);font-size:.72rem;color:var(--text-dim)}
-.measure-dots{display:grid;grid-template-columns:repeat(20,1fr);gap:3px;max-width:440px;margin:.6rem 0}
+.measure-dots{display:grid;grid-template-columns:repeat(20,minmax(0,1fr));gap:3px;max-width:440px;margin:.6rem 0}
 .measure-dots .m-dot{width:100%;aspect-ratio:1;border-radius:2px}
 .measure-dots .m-dot.hit{background-color:var(--magenta);box-shadow:var(--magenta-glow)}
 .measure-dots .m-dot.miss{background-color:var(--dim-blue)}
@@ -140,7 +148,7 @@ h1{font-family:var(--mono);font-size:clamp(1rem,3vw,1.5rem);text-transform:upper
 .speedup-bar{height:.6rem;background-color:var(--magenta);border-radius:2px;min-width:2px;transition:width .3s}
 
 /* ── AES cards ─────────────────────────────────────────── */
-.aes-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-bottom:1.25rem}
+.aes-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:1rem;margin-bottom:1.25rem}
 .aes-card{border:1px solid var(--border);border-radius:var(--radius);padding:1rem;background-color:var(--bg)}
 .aes-card.weakened{border-color:var(--amber)}
 .aes-card.strong{border-color:var(--green)}
@@ -180,10 +188,10 @@ details[open] summary{color:var(--magenta);margin-bottom:.75rem}
 /* ── Reality panel ──────────────────────────────────────── */
 .reality-panel{border:1px solid var(--border);border-radius:.5rem;padding:1.5rem;margin:0 auto 1.5rem;max-width:1440px}
 .reality-panel h2{margin-top:0;font-size:1rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;font-family:var(--mono)}
-.reality-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+.reality-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1.5rem}
 .reality-col h3{font-size:.9rem;margin-bottom:.5rem;font-family:var(--mono)}
 .reality-col ul{margin:0;padding-left:1.25rem;font-size:.875rem;line-height:1.6;color:var(--text-dim)}
-@media(max-width:600px){.reality-grid{grid-template-columns:1fr}}
+@media(max-width:600px){.reality-grid{grid-template-columns:minmax(0,1fr)}}
 
 /* ── Insight panel ─────────────────────────────────────── */
 .insight-panel{background-color:var(--surface);border-left:3px solid var(--magenta);padding:1rem 1.25rem;margin:0 auto 1.5rem;border-radius:0 .25rem .25rem 0;max-width:1440px}
@@ -232,11 +240,11 @@ select.btn:focus-visible{outline:2px solid var(--magenta);outline-offset:2px}
 .iter-display .optimal{color:var(--gold)}
 
 /* ── Responsive ────────────────────────────────────────── */
-.bottom-panels{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+.bottom-panels{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1.5rem}
 
 @media(max-width:768px){
-  .bottom-panels{grid-template-columns:1fr}
-  .race-columns{grid-template-columns:1fr}
+  .bottom-panels{grid-template-columns:minmax(0,1fr)}
+  .race-columns{grid-template-columns:minmax(0,1fr)}
   .bar-chart{height:160px}
 }
 @media(max-width:480px){
@@ -355,11 +363,11 @@ details summary:focus-visible{outline:2px solid var(--magenta);outline-offset:2p
 .fb-wrong{color:var(--gold);font-weight:700}
 
 /* Glossary */
-.glossary{display:grid;grid-template-columns:max-content 1fr;gap:.4rem 1rem;font-size:.84rem;line-height:1.5}
+.glossary{display:grid;grid-template-columns:minmax(0,max-content) minmax(0,1fr);gap:.4rem 1rem;font-size:.84rem;line-height:1.5}
 .glossary dt{font-family:var(--mono);color:var(--magenta);white-space:nowrap}
 .glossary dd{color:var(--text-dim);margin:0}
 @media(max-width:560px){
-  .glossary{grid-template-columns:1fr;gap:.1rem .5rem}
+  .glossary{grid-template-columns:minmax(0,1fr);gap:.1rem .5rem}
   .glossary dd{margin-bottom:.5rem}
 }
 

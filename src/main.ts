@@ -376,10 +376,13 @@ function renderBars(state: GroverSubStep): void {
   // Live "mean" line — the axis the diffusion step reflects about.
   const meanLine = document.createElement('div');
   meanLine.className = 'bar-mean';
-  meanLine.style.top = `${50 - (state.mean / maxAmp) * 50}%`;
+  const meanTopPct = 50 - (state.mean / maxAmp) * 50;
+  meanLine.style.top = `${meanTopPct}%`;
   meanLine.setAttribute('title', `mean amplitude ≈ ${state.mean.toFixed(4)}`);
   const meanTag = document.createElement('span');
-  meanTag.className = 'bar-mean-tag';
+  // The tag sits above the line; near the top of the chart there is no room for
+  // it there, so flip it underneath rather than let it hang outside the box.
+  meanTag.className = meanTopPct < 20 ? 'bar-mean-tag flip' : 'bar-mean-tag';
   meanTag.textContent = 'mean';
   meanLine.appendChild(meanTag);
   barChart.appendChild(meanLine);
@@ -1336,11 +1339,11 @@ Circuit depth: 2^${cost.circuitDepthExponent}</div>
       <div class="mental-box" id="mental-box" aria-live="polite"></div>
     </div>
 
-    <div class="math-layer" id="math-layer" aria-label="Math layer: equations for the current state"></div>
+    <div class="math-layer" id="math-layer" role="group" aria-label="Math layer: equations for the current state"></div>
 
     <div id="banner" class="banner"></div>
 
-    <div class="misconception" id="misconception" aria-live="polite" aria-label="Common misconception for the current step"></div>
+    <div class="misconception" id="misconception" role="status" aria-live="polite" aria-label="Common misconception for the current step"></div>
 
     <div class="prob-curve-wrap">
       <canvas id="prob-canvas" role="img" aria-label="Probability vs iteration curve"></canvas>
@@ -1415,7 +1418,7 @@ These are not practical attack estimates \u2014 they represent idealized lower b
 
 Source: Grassl et al. (2016); NIST/ETSI practical cost estimates (2024)</div>
 
-      <div class="hash-table-wrap">
+      <div class="hash-table-wrap" tabindex="0" role="region" aria-label="Hash function quantum impact table (scrollable)">
         <table class="hash-table">
           <caption class="sr-only">Hash function quantum impact analysis</caption>
           <thead><tr>
