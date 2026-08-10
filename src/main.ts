@@ -4,6 +4,7 @@ import {
   simulateGroverSubStep,
   simulateProbabilityCurve,
   groverQueryCount,
+  groverOracleQueries,
   type GroverSubStep,
   type SubPhase,
 } from './grover.ts';
@@ -808,33 +809,48 @@ function renderRotation(sub: GroverSubStep): void {
 /* ── Race panel ────────────────────────────────────────── */
 function renderRace(): void {
   const kStar = simulateGroverState(n, targetIndex, 0).optimalIterations;
-  const quantumQueries = groverQueryCount(n);
+  const quantumQueries = groverOracleQueries(n);   // k* — one oracle call per iteration
+  const totalReflections = groverQueryCount(n);    // 2k*+1 — NOT queries; see grover.ts
   const classicalExpected = N / 2;
 
   /* Stats text */
   raceClassicalStats.textContent =
     `Strategy: try random keys until target found\n` +
-    `Expected queries: N/2 = ${classicalExpected.toLocaleString()}\n` +
-    (n <= 20 ? '' : `For n=${n}: 2^${n - 1} queries\n`) +
-    (n === 128 ? 'At 10^15 queries/sec: ~10^23 seconds (~10^15 years)' : '');
+    `Expected queries: N/2 = ${classicalExpected.toLocaleString()}`;
 
   raceQuantumStats.textContent =
     `Strategy: amplitude amplification\n` +
-    `Queries: k* = ${kStar.toLocaleString()} (total: ${quantumQueries.toLocaleString()})\n` +
-    (n === 128 ? 'At 10^9 quantum ops/sec: ~10^10 seconds (~317 years)' : '');
+    `Oracle queries: k* = ${quantumQueries.toLocaleString()}\n` +
+    `Reflections applied: ${totalReflections.toLocaleString()} (oracle + diffusion per iteration, plus the initial superposition)`;
 
-  /* Shared-scale race: both bars live on ONE query-time axis, so equal width
-     means equal oracle queries. Grover (k* queries) finishes while the
-     classical search (≈N/2 queries) is still far from done — the honest
-     picture the old per-bar normalisation hid. */
+  /* Shared-scale race: both bars live on ONE query axis, so equal width means
+     equal oracle queries. Grover (k* queries) finishes while the classical
+     search (≈N/2 queries) is still far from done — the honest picture the old
+     per-bar normalisation hid.
+
+     The quantum bar is scaled by k*, NOT by 2k*+1. Diffusion is not an oracle
+     call, so the reflection count does not belong on a query axis: it drew the
+     bar ~2x too wide throughout, and at n = 2 and n = 3 it exceeded the
+     classical figure outright, so `Math.min(1, ...)` pinned both bars to 100%
+     and the panel showed a dead heat directly under a caption promising Grover
+     got there first. */
   if (raceTimer !== null) { clearInterval(raceTimer); raceTimer = null; }
   if (raceTimeout !== null) { clearTimeout(raceTimeout); raceTimeout = null; }
 
-  const quantumQ = quantumQueries;                       // ~2k*+1 queries to find
+  const quantumQ = quantumQueries;                       // k* oracle queries to find
   const classicalQ = classicalExpected;                  // ~N/2 queries expected
-  const pQuantum = Math.min(1, quantumQ / classicalQ);   // fraction of timeline when Grover finds
-  // Keep the quantum bar visible even when it's a sliver of the classical work.
-  const quantumDisplayW = Math.max(1.5, pQuantum * 100);
+  const trueShare = quantumQ / classicalQ;               // fraction of the timeline, to scale
+  const pQuantum = Math.min(1, trueShare);               // fraction of timeline when Grover finds
+  /* Keep the quantum bar visible when it is a sliver of the classical work —
+     but say so, because a floored bar is no longer to scale and the caption
+     above it claims that equal width means equal queries. */
+  const MIN_VISIBLE_W = 1.5;
+  const belowScale = pQuantum * 100 < MIN_VISIBLE_W;
+  const quantumDisplayW = Math.max(MIN_VISIBLE_W, pQuantum * 100);
+  const scaleNote = belowScale
+    ? ` (bar drawn at minimum width — to scale it would be ${(trueShare * 100).toFixed(2)}% of the classical timeline)`
+    : '';
+  raceQuantumBar.classList.toggle('below-scale', belowScale);
 
   raceQuantumBar.classList.remove('found');
   raceClassicalBar.style.width = '0%';
@@ -846,7 +862,7 @@ function renderRace(): void {
     raceClassicalBar.style.width = '100%';
     raceQuantumBar.style.width = `${quantumDisplayW}%`;
     raceQuantumBar.classList.add('found');
-    raceQuantumStatus.textContent = `✓ Found after k* = ${kStar.toLocaleString()} queries`;
+    raceQuantumStatus.textContent = `✓ Found after k* = ${kStar.toLocaleString()} oracle ${kStar === 1 ? 'query' : 'queries'}${scaleNote}`;
     raceClassicalStatus.textContent = `scanned ~${classicalQ.toLocaleString()} keys to match`;
   }
 
@@ -867,7 +883,7 @@ function renderRace(): void {
       raceQuantumBar.style.width = found ? `${quantumDisplayW}%` : `${quantumW}%`;
       if (found) {
         raceQuantumBar.classList.add('found');
-        raceQuantumStatus.textContent = `✓ Found after k* = ${kStar.toLocaleString()} queries`;
+        raceQuantumStatus.textContent = `✓ Found after k* = ${kStar.toLocaleString()} oracle ${kStar === 1 ? 'query' : 'queries'}${scaleNote}`;
       } else {
         raceQuantumStatus.textContent = 'amplifying…';
       }
@@ -877,7 +893,14 @@ function renderRace(): void {
     raceTimer = window.setInterval(tick, tickMs);
   }
 
-  /* Speedup table */
+  /* Speedup table.
+     These are N/√N — a FULL classical scan against Grover's ≈√N. The race
+     panel above compares the classical *expected* N/2 against k* = (π/4)√N,
+     which is a smaller ratio by π/2: at n = 16 the panel's own numbers give
+     32,768 / 201 = 163x where this table says 256x. Both are correct about
+     their own quantities, so the table now states which one it is measuring
+     rather than leaving a reader to reconcile two figures that disagree by
+     1.57x on the same screen. */
   const rows = [
     { n: 4, speedup: '4\u00D7', log: 2 },
     { n: 8, speedup: '16\u00D7', log: 4 },
@@ -1232,7 +1255,7 @@ Circuit depth: 2^${cost.circuitDepthExponent}</div>
     </div>
     <aside class="cl-hero-why" aria-label="Why it matters">
       <span class="cl-hero-why-label">WHY IT MATTERS</span>
-      <p class="cl-hero-why-text">Grover gives only a quadratic speedup and touches just symmetric primitives &mdash; halving the effective bits of AES and hashes, not breaking them. That is why AES-256 stays safe and post-quantum worry centers on Shor, not Grover.</p>
+      <p class="cl-hero-why-text">Grover gives only a quadratic speedup and touches just symmetric primitives &mdash; halving the effective bits of AES and of hash <em>preimage</em> resistance, not breaking them. (Collision resistance is a separate sum &mdash; classically already n/2 by the birthday bound &mdash; so it is not what Grover halves.) That is why AES-256 stays safe and post-quantum worry centers on Shor, not Grover.</p>
     </aside>
   </header>
 
@@ -1393,12 +1416,13 @@ Grover does not see inside it.</div>
           <div class="race-stats" id="race-quantum-stats"></div>
         </div>
       </div>
-      <p class="race-axis-note">Both bars share one timeline: equal width = equal number of oracle queries. Grover reaches the target in k* queries while the classical search is still scanning.</p>
+      <p class="race-axis-note">Both bars share one timeline: equal width = equal number of oracle queries. Grover reaches the target in k* queries while the classical search is still scanning. Where Grover&rsquo;s share of the timeline is too thin to see, the bar is drawn at a minimum width and labelled with its true share.</p>
       <table class="speedup-table">
-        <caption class="sr-only">Quantum speedup scaling by search space size</caption>
+        <caption class="sr-only">Quantum speedup scaling by search space size, measured as a full classical scan of N against Grover&rsquo;s square-root-of-N queries</caption>
         <thead><tr><th>n</th><th>Speedup</th><th>Scale</th></tr></thead>
         <tbody id="speedup-body"></tbody>
       </table>
+      <p class="race-axis-note">Speedup here is N &divide; &radic;N &mdash; a full classical scan against Grover&rsquo;s &asymp;&radic;N. The race above uses the classical <em>expected</em> N/2 against k* = (&pi;/4)&radic;N, so its ratio is smaller by &pi;/2. Same quadratic speedup, two different pairs of quantities.</p>
     </section>
 
     <!-- Panel C: AES & Hash Impact -->

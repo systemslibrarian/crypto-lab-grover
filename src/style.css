@@ -118,6 +118,10 @@ h1{font-family:var(--mono);font-size:clamp(1rem,3vw,1.5rem);text-transform:upper
 .race-bar.classical{background-color:var(--dim-blue)}
 .race-bar.quantum{background-color:var(--magenta)}
 .race-bar.quantum.found{box-shadow:var(--magenta-glow);outline:1px solid var(--magenta)}
+/* Drawn at minimum width so it stays visible, which means it is no longer to
+   scale — hatched rather than solid, and the status line states its true
+   share. Colour is not the only channel: the pattern carries it (1.4.1). */
+.race-bar.quantum.below-scale{background-image:repeating-linear-gradient(135deg,transparent 0 3px,rgba(0,0,0,.45) 3px 6px)}
 .race-status{font-family:var(--mono);font-size:.7rem;color:var(--text-dim);min-height:1.1em;margin:.1rem 0}
 .race-axis-note{font-family:var(--mono);font-size:.7rem;color:var(--text-dim);line-height:1.6;margin-top:.6rem}
 

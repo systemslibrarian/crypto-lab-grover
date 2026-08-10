@@ -313,7 +313,26 @@ export async function classicalSearch(N: number): Promise<{
 }
 
 /**
- * Grover query count estimate as 2*k* + 1.
+ * Number of ORACLE QUERIES Grover makes: exactly k*, one per iteration.
+ *
+ * This is the quantity the glossary defines as query complexity ("number of
+ * oracle calls"), and the only one that may be compared against the classical
+ * N/2 on a shared query axis. `groverQueryCount` below counts something else.
+ */
+export function groverOracleQueries(n: number): number {
+  assertQubitRange(n);
+  return optimalIterationsForN(2 ** n);
+}
+
+/**
+ * Total REFLECTIONS applied, 2*k* + 1 — the initial superposition plus an
+ * oracle and a diffusion per iteration.
+ *
+ * This is not a query count: diffusion touches no oracle. Racing this against
+ * the classical N/2 overstates Grover's cost by ~2x, and below n = 4 it
+ * overstates it past the classical figure entirely (n = 2: 3 vs 2), which is
+ * how the race bars once rendered a dead heat at the slider's own minimum.
+ * Use `groverOracleQueries` for anything on the query axis.
  */
 export function groverQueryCount(n: number): number {
   assertQubitRange(n);

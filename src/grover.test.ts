@@ -7,6 +7,7 @@ import {
   simulateGroverState,
   simulateGroverSubStep,
   simulateProbabilityCurve,
+  groverOracleQueries,
   classicalSearch,
   groverQueryCount,
 } from './grover.ts';
@@ -225,6 +226,31 @@ describe('groverQueryCount', () => {
     expect(groverQueryCount(n)).toBeLessThan(2 ** n / 2);
     // O(sqrt(N)) scale: roughly on the order of sqrt(2^20)=1024.
     expect(groverQueryCount(n)).toBeLessThan(4000);
+  });
+
+  // 2k*+1 is NOT below N/2 across the whole slider range — it exceeds it at
+  // n = 2 (3 vs 2) and n = 3 (5 vs 4). This test pins that, so nobody puts the
+  // reflection count back on the query axis and rediscovers the dead-heat bars.
+  it('is the reflection count, and exceeds classical N/2 at the smallest n', () => {
+    expect(groverQueryCount(2)).toBeGreaterThan(2 ** 2 / 2);
+    expect(groverQueryCount(3)).toBeGreaterThan(2 ** 3 / 2);
+  });
+});
+
+describe('groverOracleQueries', () => {
+  it('is k*: exactly one oracle call per iteration', () => {
+    for (let n = MIN_QUBITS; n <= MAX_QUBITS; n += 1) {
+      expect(groverOracleQueries(n)).toBe(optimalIterationsForN(2 ** n));
+    }
+  });
+
+  // The property the race panel renders as a shared axis: Grover's oracle-query
+  // count beats the classical expectation at EVERY n the slider can reach —
+  // including the two the old suite skipped.
+  it('beats the classical N/2 at every n in the supported range', () => {
+    for (let n = MIN_QUBITS; n <= MAX_QUBITS; n += 1) {
+      expect(groverOracleQueries(n), `n=${n}`).toBeLessThan(2 ** n / 2);
+    }
   });
 });
 

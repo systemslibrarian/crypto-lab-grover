@@ -323,7 +323,11 @@ test('resizing the search space rescales N, k* and the race in step', async ({ p
   test.setTimeout(HEAVY);
   await page.goto('.');
 
-  for (const n of [4, 10, 16]) {
+  // n = 2 and n = 3 are included deliberately. This loop used to run only
+  // {4, 10, 16} and assert `2k*+1 < N/2`, which is false at n = 2 (3 vs 2) and
+  // n = 3 (5 vs 4) — the test encoded the same unit error as the panel and
+  // skipped the range that would have exposed it.
+  for (const n of [2, 3, 4, 10, 16]) {
     await page.locator('#n-slider').fill(String(n));
     await page.locator('#n-slider').dispatchEvent('input');
 
@@ -332,16 +336,18 @@ test('resizing the search space rescales N, k* and the race in step', async ({ p
     expect((await readIteration(page)).kStar).toBe(kStarFor(n));
     expect((await readMathLayer(page)).N).toBe(N);
 
-    // The race quotes N/2 classical queries against 2k*+1 quantum ones — the
-    // quadratic speedup the lab exists to show.
+    // The race quotes N/2 classical queries against k* quantum ones — the
+    // quadratic speedup the lab exists to show. Queries means oracle calls,
+    // as the glossary defines it; diffusion is counted separately.
     const classical = (await page.locator('#race-classical-stats').textContent()) ?? '';
     const quantum = (await page.locator('#race-quantum-stats').textContent()) ?? '';
     expect(num(classical, /Expected queries: N\/2 = ([\d,]+)/)).toBe(N / 2);
-    const kStar = num(quantum, /k\* = ([\d,]+)/);
-    const total = num(quantum, /total: ([\d,]+)/);
+    const kStar = num(quantum, /Oracle queries: k\* = ([\d,]+)/);
+    const reflections = num(quantum, /Reflections applied: ([\d,]+)/);
     expect(kStar).toBe(kStarFor(n));
-    expect(total, 'total quantum queries are not 2·k*+1').toBe(2 * kStar + 1);
-    expect(total, 'Grover used at least as many queries as classical search').toBeLessThan(N / 2);
+    expect(reflections, 'reflections are 2·k*+1').toBe(2 * kStar + 1);
+    expect(kStar, 'Grover used at least as many oracle queries as classical search')
+      .toBeLessThan(N / 2);
 
     // The target index stays inside the resized space.
     const target = num(await page.locator('#target-display').textContent(), /index (\d+)/);
@@ -541,4 +547,133 @@ test('the guided lesson walks its stages and drives the simulator', async ({ pag
   await expect(page.locator('#lesson-next')).toHaveText('Finish ✓');
   await page.locator('#lesson-exit').click();
   await expect(page.locator('#lesson-body')).toBeHidden();
+});
+
+/* ── The race axis ────────────────────────────────────────────────────────
+ * The panel renders an explicit invariant: "equal width = equal number of
+ * oracle queries". These tests assert that invariant against the widths the
+ * browser actually computes, at every n the slider can reach — not against the
+ * strings, and not against the simulator's own arithmetic.
+ *
+ * They exist because the bar was previously scaled by 2k*+1, the reflection
+ * count. Diffusion is not an oracle call, so that drew the quantum bar ~2x too
+ * wide throughout, and at n = 2 and n = 3 it exceeded the classical figure
+ * outright — `Math.min(1, …)` then pinned both bars to 100% and the panel
+ * showed a dead heat directly beneath a caption promising Grover got there
+ * first, and beside status lines reading 1 query against 2.
+ */
+
+/** Fraction of the wrap each race bar occupies, measured from the layout. */
+async function raceBarShares(page: Page): Promise<{ classical: number; quantum: number }> {
+  return page.evaluate(() => {
+    const widthOf = (sel: string): number => {
+      const el = document.querySelector(sel) as HTMLElement;
+      const wrap = el.parentElement as HTMLElement;
+      return el.getBoundingClientRect().width / wrap.getBoundingClientRect().width;
+    };
+    return { classical: widthOf('#race-classical-bar'), quantum: widthOf('#race-quantum-bar') };
+  });
+}
+
+async function setQubits(page: Page, n: number): Promise<void> {
+  await page.evaluate((v) => {
+    const s = document.querySelector('#n-slider') as HTMLInputElement;
+    s.value = String(v);
+    s.dispatchEvent(new Event('input', { bubbles: true }));
+  }, n);
+  await expect(page.locator('#n-value')).toHaveText(`N = 2^${n} = ${(2 ** n).toLocaleString()}`);
+
+  // `.race-bar` carries `transition: width .15s linear`, which reduced-motion
+  // emulation does not disable — measuring the rect immediately returns the
+  // PREVIOUS n's width mid-animation. (That is what this test did first, and
+  // it read n = 4's 0.375 while asserting against n = 2's 0.5.) Wait until the
+  // laid-out width agrees with the inline target width.
+  await page.waitForFunction(() => {
+    const settled = (sel: string): boolean => {
+      const el = document.querySelector(sel) as HTMLElement;
+      const wrap = el.parentElement as HTMLElement;
+      const actual = (el.getBoundingClientRect().width / wrap.getBoundingClientRect().width) * 100;
+      return Math.abs(actual - parseFloat(el.style.width)) < 0.05;
+    };
+    return settled('#race-classical-bar') && settled('#race-quantum-bar');
+  });
+}
+
+test('the race bars honour the axis the caption claims, at every n', async ({ page }) => {
+  test.setTimeout(HEAVY);
+  await page.emulateMedia({ reducedMotion: 'reduce' }); // take the settled path
+  await page.goto('.');
+
+  const MIN_VISIBLE = 0.015; // the floor the panel is allowed to draw at
+
+  for (let n = 2; n <= 20; n += 1) {
+    await setQubits(page, n);
+
+    const kStar = kStarFor(n);
+    const classicalQueries = 2 ** n / 2;
+    const trueShare = kStar / classicalQueries;
+
+    const { classical, quantum } = await raceBarShares(page);
+    const status = (await page.locator('#race-quantum-status').textContent()) ?? '';
+    const belowScale = /minimum width/.test(status);
+
+    expect(classical, `n=${n}: the classical bar is the full timeline`).toBeCloseTo(1, 2);
+
+    if (belowScale) {
+      // Floored for visibility — then it must SAY so, and say the true share.
+      expect(trueShare, `n=${n}: claims to be floored but is not below the floor`)
+        .toBeLessThan(MIN_VISIBLE);
+      expect(quantum, `n=${n}: floored bar should sit at the floor`).toBeCloseTo(MIN_VISIBLE, 3);
+      const stated = num(status, /would be ([\d.]+)% of the classical timeline/);
+      expect(stated, `n=${n}: the stated true share must be the real one`)
+        .toBeCloseTo(trueShare * 100, 2);
+      await expect(
+        page.locator('#race-quantum-bar'),
+        `n=${n}: a not-to-scale bar must be marked by more than colour`,
+      ).toHaveClass(/below-scale/);
+    } else {
+      // Drawn to scale — so the width IS the query ratio, as the caption says.
+      expect(quantum, `n=${n}: bar width must equal k*/(N/2) = ${trueShare}`)
+        .toBeCloseTo(trueShare, 3);
+      expect(trueShare, `n=${n}: drawn to scale, so it must be above the floor`)
+        .toBeGreaterThanOrEqual(MIN_VISIBLE);
+    }
+
+    // Grover must never be rendered as losing or tying: k* < N/2 for all n ≥ 2.
+    expect(quantum, `n=${n}: the quantum bar must not reach the classical bar`)
+      .toBeLessThan(classical);
+  }
+});
+
+test('the race status quotes the oracle-query count, not the reflection count', async ({ page }) => {
+  test.setTimeout(HEAVY);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('.');
+
+  for (const n of [2, 4, 12, 20]) {
+    await setQubits(page, n);
+    const kStar = kStarFor(n);
+
+    const status = (await page.locator('#race-quantum-status').textContent()) ?? '';
+    expect(num(status, /k\* = ([\d,]+) oracle quer/), `n=${n}: status quotes k*`).toBe(kStar);
+
+    const stats = (await page.locator('#race-quantum-stats').textContent()) ?? '';
+    expect(num(stats, /Oracle queries: k\* = ([\d,]+)/), `n=${n}: stats quote k*`).toBe(kStar);
+    // The reflection count is still shown, but never called a query.
+    expect(num(stats, /Reflections applied: ([\d,]+)/), `n=${n}: reflections are 2k*+1`)
+      .toBe(2 * kStar + 1);
+  }
+});
+
+test('the speedup table states which quantities it compares', async ({ page }) => {
+  await page.goto('.');
+  // The table is N/√N; the race is (N/2)/k*. They differ by π/2, so the page
+  // must not leave two figures for "the speedup" unreconciled on one screen.
+  const notes = (await page.locator('#panel-b').textContent()) ?? '';
+  expect(notes).toMatch(/N ÷ √N/);
+  expect(notes).toMatch(/π\/2/);
+
+  const rows = page.locator('#speedup-body tr');
+  const n16 = rows.filter({ hasText: 'n=16' });
+  await expect(n16).toContainText('256'); // √N, as the note now says
 });
