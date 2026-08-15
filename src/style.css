@@ -18,7 +18,13 @@
 
 [data-theme="light"]{
   color-scheme:light;
-  --bg:#f1f5f9;--surface:#ffffff;--border:#cbd5e1;--border-strong:#7b94b3;
+  /* --border-strong was carried at #7b94b3, which clears 3:1 against --surface
+     (#ffffff, 3.13:1) but NOT against --bg (#f1f5f9, 2.85:1) — and the challenge
+     and prediction buttons are the .btn instances that sit on --bg rather than
+     on a white panel, so those two missed the 1.4.11 threshold while every other
+     .btn passed. #748caa is the same hue carried down far enough to clear it on
+     both: 3.15:1 on --bg, 3.45:1 on --surface. Dark was never affected. */
+  --bg:#f1f5f9;--surface:#ffffff;--border:#cbd5e1;--border-strong:#748caa;
   --text:#0f172a;--text-dim:#475569;
   --magenta:#9b0099;--magenta-glow:0 0 8px #9b009966;
   --on-magenta:#fff; /* white on #9b0099 is 7.4:1 */
