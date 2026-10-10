@@ -31,7 +31,7 @@ You can deep-link a specific state with query parameters — e.g. `?steps=3` jum
 
 ## Real-World Usage
 
-- **Post-quantum symmetric sizing** — NIST CNSA 2.0 recommends AES-256 (and larger hash outputs) so the halved effective strength still clears the security bar.
+- **Post-quantum symmetric sizing** — the [NIST PQC FAQ](https://csrc.nist.gov/projects/post-quantum-cryptography/faqs) permits current applications to continue AES-128, AES-192 or AES-256 and distinguishes practical cost from idealized Grover query counts. AES-256 is this lab’s conservative margin choice. NSA’s separate CNSA profile selects AES-256 for national security systems; CNSA 2.0 is not NIST’s blanket AES migration guidance.
 - **Hash security margins** — Grover halves preimage resistance, so SHA-256 still offers ~128-bit preimage security against a quantum attacker; output sizes are chosen with this in mind.
 - **Quantum resource estimation** — Grassl et al. and follow-up work estimate the qubits and circuit depth to run Grover on AES, feeding standards decisions.
 - **Migration planning** — symmetric primitives mostly need larger parameters rather than replacement, unlike public-key crypto, which Shor forces onto post-quantum schemes entirely.
@@ -83,8 +83,9 @@ For classroom use, see the [teaching guide](docs/TEACHING.md) — lesson plans (
 1. **Grover, L. K.** (1996). "A fast quantum mechanical algorithm for database search." *Proceedings of the 28th Annual ACM Symposium on Theory of Computing*, pp. 212–219.
 2. **Bennett, C. H., Bernstein, E., Brassard, G., & Vazirani, U.** (1997). "Strengths and weaknesses of quantum computing." *SIAM Journal on Computing*, 26(5), pp. 1510–1523. (BBBV lower bound — proves Grover's O(√N) is optimal.)
 3. **Grassl, M., Langenberg, B., Roetteler, M., & Steinwandt, R.** (2016). "Applying Grover's algorithm to AES: Quantum resource estimates." *Post-Quantum Cryptography (PQCrypto 2016)*, LNCS 9606, pp. 29–43. (Source for AES circuit depth and qubit cost estimates.)
-4. **NIST** (2024). CNSA 2.0 and post-quantum cryptography transition guidance. Recommends AES-256 for post-quantum symmetric security.
-5. **Nielsen, M. A. & Chuang, I. L.** (2010). *Quantum Computation and Quantum Information*. Cambridge University Press. (Standard reference for amplitude amplification.)
+4. **NIST**. [PQC FAQ](https://csrc.nist.gov/projects/post-quantum-cryptography/faqs), AES key-length question. Current applications may continue AES-128/192/256; query counts do not establish practical attack costs.
+5. **NSA**. [CNSA/CSfC FAQ](https://www.nsa.gov/Resources/Commercial-Solutions-for-Classified-Program/faq/) and [CNSA 2.0 announcement](https://www.nsa.gov/Press-Room/News-Highlights/Article/Article/3148990/nsa-releases-future-quantum-resistant-qr-algorithm-requirements-for-national-se/). AES-256 selection and national-security scope, distinct from general NIST guidance.
+6. **Nielsen, M. A. & Chuang, I. L.** (2010). *Quantum Computation and Quantum Information*. Cambridge University Press. (Standard reference for amplitude amplification.)
 
 ---
 

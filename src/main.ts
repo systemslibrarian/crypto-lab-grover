@@ -8,7 +8,7 @@ import {
   type GroverSubStep,
   type SubPhase,
 } from './grover.ts';
-import { analyzeKeySize, aesQuantumCost, analyzeHashFunction } from './aes-impact.ts';
+import { AES_GUIDANCE, analyzeKeySize, aesQuantumCost, analyzeHashFunction } from './aes-impact.ts';
 
 /* ── Helpers ───────────────────────────────────────────── */
 function $(sel: string, root: ParentNode = document): HTMLElement {
@@ -931,21 +931,21 @@ const AES_SIGNATURE_DATA: Record<number, {
     classical: '2^128',
     grover: '2^64',
     reality: 'Potentially feasible for a very large quantum computer, but circuit depth (~2^82 qubit-cycles) makes this far harder than headline numbers suggest.',
-    explanation: `Grover's algorithm reduces brute-force search from 2^128 to ~2^64 operations under idealized assumptions.\n\nWhile this is a major theoretical improvement, it does not represent a practical near-term attack due to:\n• quantum circuit depth (~2^82 logical qubit-cycles per Grassl et al.)\n• oracle construction cost (each iteration runs a full AES-128 circuit coherently)\n• error correction requirements (~2,953 logical qubits needed)\n\nAES-128 is often discussed as having ~64-bit effective brute-force resistance under idealized Grover assumptions. NIST recommends upgrading to AES-256 for post-quantum security.`,
+    explanation: `Grover's algorithm reduces brute-force search from 2^128 to ~2^64 operations under idealized assumptions.\n\nWhile this is a major theoretical improvement, it does not represent a practical near-term attack due to:\n• quantum circuit depth (~2^82 logical qubit-cycles per Grassl et al.)\n• oracle construction cost (each iteration runs a full AES-128 circuit coherently)\n• error correction requirements (~2,953 logical qubits needed)\n\nAES-128 is often discussed as having ~64-bit effective brute-force resistance under idealized Grover assumptions. ${AES_GUIDANCE.nist} ${AES_GUIDANCE.nsa} ${AES_GUIDANCE.lab}`,
   },
   192: {
     keyBits: 192,
     classical: '2^192',
     grover: '2^96',
     reality: 'Still infeasible — 2^96 idealized operations with deep circuits per iteration.',
-    explanation: `Grover's algorithm reduces brute-force search from 2^192 to ~2^96 operations under idealized assumptions.\n\nWhile 2^96 is significantly smaller than 2^192, it remains well beyond foreseeable quantum capability due to:\n• quantum circuit depth (~2^114 logical qubit-cycles)\n• oracle construction cost (AES-192 circuit is deeper than AES-128)\n• error correction requirements (~4,449 logical qubits needed)\n\nAES-192 retains a strong security margin, though NIST recommends AES-256 for maximum post-quantum assurance.`,
+    explanation: `Grover's algorithm reduces brute-force search from 2^192 to ~2^96 operations under idealized assumptions.\n\nWhile 2^96 is significantly smaller than 2^192, it remains well beyond foreseeable quantum capability due to:\n• quantum circuit depth (~2^114 logical qubit-cycles)\n• oracle construction cost (AES-192 circuit is deeper than AES-128)\n• error correction requirements (~4,449 logical qubits needed)\n\nAES-192 retains a strong security margin. ${AES_GUIDANCE.nist} ${AES_GUIDANCE.nsa} ${AES_GUIDANCE.lab}`,
   },
   256: {
     keyBits: 256,
     classical: '2^256',
     grover: '2^128',
     reality: 'Still infeasible — 2^128 operations remains far beyond any foreseeable capability.',
-    explanation: `Grover's algorithm reduces brute-force search from 2^256 to ~2^128 operations under idealized assumptions.\n\nEven with a quadratic speedup, 2^128 operations is an astronomically large number:\n• quantum circuit depth (~2^146 logical qubit-cycles)\n• oracle construction cost (AES-256 has the deepest circuit of all three)\n• error correction requirements (~6,681 logical qubits needed)\n\nAES-256 is recommended by NIST (CNSA 2.0) as the standard for post-quantum symmetric encryption. The 2^128 effective security margin is considered strong for the foreseeable future.`,
+    explanation: `Grover's algorithm reduces brute-force search from 2^256 to ~2^128 operations under idealized assumptions.\n\nEven with a quadratic speedup, 2^128 operations is an astronomically large number:\n• quantum circuit depth (~2^146 logical qubit-cycles)\n• oracle construction cost (AES-256 has the deepest circuit of all three)\n• error correction requirements (~6,681 logical qubits needed)\n\nAES-256 retains a large idealized query margin. ${AES_GUIDANCE.nist} ${AES_GUIDANCE.nsa} ${AES_GUIDANCE.lab}`,
   },
 };
 
@@ -1137,7 +1137,7 @@ const CHALLENGES: Challenge[] = [
   {
     q: 'Under idealized Grover assumptions, the effective cost of attacking AES-256 is about…',
     options: [{ label: '2^64', correct: false }, { label: '2^96', correct: false }, { label: '2^128', correct: true }],
-    explain: 'Grover halves the effective key length: 2^256 → 2^128. That remains far beyond any foreseeable capability, which is why NIST/CNSA recommends AES-256.',
+    explain: 'Grover halves the effective key length: 2^256 → 2^128. That remains far beyond any foreseeable capability, a reason this lab favors AES-256 for extra margin. NIST permits continued AES-128/192/256 use in current applications; NSA CNSA has a separate national-security scope.',
   },
   {
     q: 'Is Shor’s algorithm a threat to AES?',
@@ -1430,6 +1430,7 @@ Grover does not see inside it.</div>
       <h2 id="panel-c-heading" class="panel-header">Impact on Symmetric Cryptography</h2>
 
       <div class="aes-cards">${aesCards}</div>
+      <p class="table-note" id="aes-guidance">${AES_GUIDANCE.nist} ${AES_GUIDANCE.nsa} ${AES_GUIDANCE.lab} Sources: <a href="https://csrc.nist.gov/projects/post-quantum-cryptography/faqs">NIST PQC FAQ</a>; <a href="https://www.nsa.gov/Resources/Commercial-Solutions-for-Classified-Program/faq/">NSA CNSA/CSfC FAQ</a>.</p>
 
       <div class="insight-box">KEY INSIGHT: Under idealized assumptions, circuit depth matters more than the qubit count.
 
@@ -1457,7 +1458,7 @@ Source: Grassl et al. (2016); NIST/ETSI practical cost estimates (2024)</div>
 
       <div class="fix-box">
         <h3>The Mitigation</h3>
-        <p>Under idealized Grover assumptions, effective key length is halved. Doubling key length restores the original security margin.</p>
+        <p>Under idealized Grover assumptions, the oracle-query exponent is halved. Doubling key length restores that query margin; it is a conservative parameter choice, not a general NIST transition requirement.</p>
         <p style="margin-top:.5rem">AES-128 \u2192 AES-256 &ensp;(already standardized)<br>
 SHA-256 \u2192 SHA-512 &ensp;(straightforward upgrade)<br>
 HMAC-SHA-256 \u2192 HMAC-SHA-512</p>
@@ -1479,7 +1480,7 @@ systems. For symmetric systems, longer keys are sufficient.</p>
             <tr><td>Impact on RSA</td><td>None</td><td>Complete break</td></tr>
             <tr><td>Impact on ECC</td><td>None</td><td>Complete break</td></tr>
             <tr><td>Fix</td><td>Double key length</td><td>Replace algorithm</td></tr>
-            <tr><td>NIST response</td><td>Recommend 256-bit keys</td><td>New standards (ML-KEM, ML-DSA)</td></tr>
+            <tr><td>NIST response</td><td>Current applications may continue AES-128/192/256; practical costs matter</td><td>New standards (ML-KEM, ML-DSA)</td></tr>
           </tbody>
         </table>
         <p style="margin-top:.75rem;font-family:var(--mono);font-size:.72rem;color:var(--text-dim)">Grover is the lesser threat (quadratic speedup). Shor is the existential one (exponential speedup). Both must be addressed, but they require different responses. All speedup figures assume idealized quantum computation.</p>
@@ -1547,7 +1548,8 @@ systems. For symmetric systems, longer keys are sufficient.</p>
         <tr><td>Grover search uses ≈√N oracle queries (quadratic speedup).</td><td>Grover, <em>A fast quantum mechanical algorithm for database search</em>, STOC 1996.</td></tr>
         <tr><td>≈√N is optimal — no quantum algorithm searches unstructured data faster.</td><td>Bennett, Bernstein, Brassard &amp; Vazirani (BBBV), <em>SIAM J. Computing</em>, 1997.</td></tr>
         <tr><td>AES logical-qubit counts and circuit-depth (≈2^82 / 2^114 / 2^146).</td><td>Grassl, Langenberg, Roetteler &amp; Steinwandt, <em>Applying Grover’s algorithm to AES</em>, PQCrypto 2016.</td></tr>
-        <tr><td>AES-256 / SHA-512 recommended for post-quantum use.</td><td>NIST SP 800-57; NSA CNSA 2.0 (2022).</td></tr>
+        <tr><td>Current applications may continue AES-128/192/256; practical search cost differs from query count.</td><td><a href="https://csrc.nist.gov/projects/post-quantum-cryptography/faqs">NIST PQC FAQ, AES key-length question.</a></td></tr>
+        <tr><td>CNSA selects AES-256 for national security systems; CNSA 2.0 is NSA’s profile.</td><td><a href="https://www.nsa.gov/Resources/Commercial-Solutions-for-Classified-Program/faq/">NSA CNSA/CSfC FAQ</a>; <a href="https://www.nsa.gov/Press-Room/News-Highlights/Article/Article/3148990/nsa-releases-future-quantum-resistant-qr-algorithm-requirements-for-national-se/">NSA CNSA 2.0 announcement</a>.</td></tr>
         <tr><td>Quantum collision search bound ≈2^(n/3) (distinct from preimage).</td><td>Brassard, Høyer &amp; Tapp (BHT), 1998.</td></tr>
         <tr><td>Shor breaks RSA / ECC / Diffie-Hellman (not symmetric crypto).</td><td>Shor, <em>Polynomial-time algorithms for prime factorization and discrete logarithms</em>, 1994/1997.</td></tr>
       </tbody>
