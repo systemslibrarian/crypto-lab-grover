@@ -1,3 +1,10 @@
+// Keep policy scope separate from the idealized n/2 query exponent below.
+export const AES_GUIDANCE = {
+  nist: 'NIST’s PQC FAQ permits current applications to continue AES with 128, 192 or 256-bit keys; idealized query counts are not practical attack costs.',
+  nsa: 'NSA’s CNSA profile selects AES-256 for national security systems within its scope; this is separate from NIST’s general guidance.',
+  lab: 'Lab design choice: AES-256 provides extra margin when requirements and compatibility permit, not a blanket NIST migration mandate.',
+} as const;
+
 export interface KeySizeAnalysis {
   keyBits: number;
   classicalSecurity: number;
@@ -14,20 +21,20 @@ const KEY_DATA: Record<128 | 192 | 256, Omit<KeySizeAnalysis, 'keyBits' | 'class
   128: {
     optimalGroverIters: '≈2^64',
     practicalThreat: 'weakened',
-    recommendation: 'Upgrade to AES-256. Under idealized Grover assumptions, effective brute-force resistance drops to ~2^64 operations — potentially feasible for a large quantum computer, though circuit depth makes practical cost much higher.',
-    nistStatus: 'Not recommended for post-quantum use',
+    recommendation: 'Lab design choice: consider AES-256 for extra margin. The ~2^64 figure counts idealized Grover oracle calls; running a coherent AES circuit for each call makes practical cost much higher. It is not evidence that AES-128 is broken.',
+    nistStatus: AES_GUIDANCE.nist,
   },
   192: {
     optimalGroverIters: '≈2^96',
     practicalThreat: 'weakened',
-    recommendation: 'Upgrade to AES-256. While 2^96 is still very large, AES-256 provides a stronger margin.',
-    nistStatus: 'Upgrade to AES-256 recommended',
+    recommendation: 'Lab design choice: AES-256 offers extra margin; ~2^96 idealized oracle calls do not establish a practical attack on AES-192.',
+    nistStatus: AES_GUIDANCE.nist,
   },
   256: {
     optimalGroverIters: '≈2^128',
     practicalThreat: 'strong',
-    recommendation: 'Keep — 2^128 effective operations remains strong post-quantum.',
-    nistStatus: 'Recommended for post-quantum symmetric encryption (CNSA 2.0)',
+    recommendation: 'Lab margin choice: AES-256 retains ~2^128 idealized query resistance, with substantially greater practical circuit cost.',
+    nistStatus: AES_GUIDANCE.nist,
   },
 };
 
