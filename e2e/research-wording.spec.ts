@@ -11,3 +11,13 @@ test('resource budget keeps depth, width and volume distinct across AES sizes', 
     await expect(budget).not.toContainText('idealized lower bound');
   }
 });
+
+test('all resource budgets reflow at 320px without clipping units', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.goto('.');
+  for (const bits of ['128', '192', '256']) {
+    await page.locator('#budget-selector').selectOption(bits);
+    await expect(page.locator('#budget-box .total .bv')).toContainText('logical circuit layers');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  }
+});
