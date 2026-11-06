@@ -930,22 +930,22 @@ const AES_SIGNATURE_DATA: Record<number, {
     keyBits: 128,
     classical: '2^128',
     grover: '2^64',
-    reality: 'Potentially feasible for a very large quantum computer, but circuit depth (~2^82 qubit-cycles) makes this far harder than headline numbers suggest.',
-    explanation: `Grover's algorithm reduces brute-force search from 2^128 to ~2^64 operations under idealized assumptions.\n\nWhile this is a major theoretical improvement, it does not represent a practical near-term attack due to:\n• quantum circuit depth (~2^82 logical qubit-cycles per Grassl et al.)\n• oracle construction cost (each iteration runs a full AES-128 circuit coherently)\n• error correction requirements (~2,953 logical qubits needed)\n\nAES-128 is often discussed as having ~64-bit effective brute-force resistance under idealized Grover assumptions. ${AES_GUIDANCE.nist} ${AES_GUIDANCE.nsa} ${AES_GUIDANCE.lab}`,
+    reality: 'Potentially feasible for a very large quantum computer, but circuit depth (~2^82 logical circuit layers) makes this far harder than headline numbers suggest.',
+    explanation: `Grover's algorithm reduces brute-force search from 2^128 to ~2^64 operations under idealized assumptions.\n\nWhile this is a major theoretical improvement, it does not represent a practical near-term attack due to:\n• quantum circuit depth (~2^82 logical circuit layers per Grassl et al.)\n• oracle construction cost (each iteration runs a full AES-128 circuit coherently)\n• error correction requirements (~2,953 logical qubits needed)\n\nAES-128 is often discussed as having ~64-bit effective brute-force resistance under idealized Grover assumptions. ${AES_GUIDANCE.nist} ${AES_GUIDANCE.nsa} ${AES_GUIDANCE.lab}`,
   },
   192: {
     keyBits: 192,
     classical: '2^192',
     grover: '2^96',
     reality: 'Still infeasible — 2^96 idealized operations with deep circuits per iteration.',
-    explanation: `Grover's algorithm reduces brute-force search from 2^192 to ~2^96 operations under idealized assumptions.\n\nWhile 2^96 is significantly smaller than 2^192, it remains well beyond foreseeable quantum capability due to:\n• quantum circuit depth (~2^114 logical qubit-cycles)\n• oracle construction cost (AES-192 circuit is deeper than AES-128)\n• error correction requirements (~4,449 logical qubits needed)\n\nAES-192 retains a strong security margin. ${AES_GUIDANCE.nist} ${AES_GUIDANCE.nsa} ${AES_GUIDANCE.lab}`,
+    explanation: `Grover's algorithm reduces brute-force search from 2^192 to ~2^96 operations under idealized assumptions.\n\nWhile 2^96 is significantly smaller than 2^192, it remains well beyond foreseeable quantum capability due to:\n• quantum circuit depth (~2^114 logical circuit layers)\n• oracle construction cost (AES-192 circuit is deeper than AES-128)\n• error correction requirements (~4,449 logical qubits needed)\n\nAES-192 retains a strong security margin. ${AES_GUIDANCE.nist} ${AES_GUIDANCE.nsa} ${AES_GUIDANCE.lab}`,
   },
   256: {
     keyBits: 256,
     classical: '2^256',
     grover: '2^128',
     reality: 'Still infeasible — 2^128 operations remains far beyond any foreseeable capability.',
-    explanation: `Grover's algorithm reduces brute-force search from 2^256 to ~2^128 operations under idealized assumptions.\n\nEven with a quadratic speedup, 2^128 operations is an astronomically large number:\n• quantum circuit depth (~2^146 logical qubit-cycles)\n• oracle construction cost (AES-256 has the deepest circuit of all three)\n• error correction requirements (~6,681 logical qubits needed)\n\nAES-256 retains a large idealized query margin. ${AES_GUIDANCE.nist} ${AES_GUIDANCE.nsa} ${AES_GUIDANCE.lab}`,
+    explanation: `Grover's algorithm reduces brute-force search from 2^256 to ~2^128 operations under idealized assumptions.\n\nEven with a quadratic speedup, 2^128 operations is an astronomically large number:\n• quantum circuit depth (~2^146 logical circuit layers)\n• oracle construction cost (AES-256 has the deepest circuit of all three)\n• error correction requirements (~6,681 logical qubits needed)\n\nAES-256 retains a large idealized query margin. ${AES_GUIDANCE.nist} ${AES_GUIDANCE.nsa} ${AES_GUIDANCE.lab}`,
   },
 };
 
@@ -1048,7 +1048,7 @@ const LESSON: LessonStage[] = [
   {
     title: '5 · What it means for crypto',
     body: `<p>The same math sets the cost of attacking AES. A brute-force key search over 2¹²⁸ keys needs ~2⁶⁴ Grover iterations — key length is effectively <strong>halved</strong>.</p>
-<p>But each iteration runs a full AES circuit coherently, so the real cost (≈2⁸² qubit-cycles for AES-128) is far higher. <strong>AES-256</strong> keeps a 2¹²⁸ margin and stays strong. Grover ≠ Shor: this is a quadratic dent, not an exponential break.</p>
+<p>But each iteration runs a full AES circuit coherently, so the real cost (≈2⁸² logical circuit layers for AES-128) is far higher. <strong>AES-256</strong> keeps a 2¹²⁸ margin and stays strong. Grover ≠ Shor: this is a quadratic dent, not an exponential break.</p>
 <p>Next, open <strong>“The Real Cost of One Oracle Call”</strong> to see iterations separated from cost-per-call, and <strong>“Assumptions &amp; Sources”</strong> for the references behind these numbers.</p>
 <p class="lesson-do">Press <em>Finish</em> to jump to Challenge mode and test yourself.</p>`,
     apply: () => { renderSignatureFeature(); document.getElementById('panel-c')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); },
@@ -1109,14 +1109,14 @@ function renderBudget(): void {
     `<div class="budget-grid">` +
     `<div class="budget-row"><span>Grover iterations (oracle calls)</span><span class="bv">≈ 2^${iterExp}</span></div>` +
     `<div class="budget-op">×</div>` +
-    `<div class="budget-row"><span>Cost per oracle call (one full AES-${bits} circuit, coherent)</span><span class="bv">≈ 2^${perIterExp} qubit-cycles</span></div>` +
+    `<div class="budget-row"><span>Approximate depth per Grover iteration (total divided by iterations)</span><span class="bv">≈ 2^${perIterExp} logical circuit layers</span></div>` +
     `<div class="budget-op">=</div>` +
-    `<div class="budget-row total"><span>Total circuit depth (idealized lower bound)</span><span class="bv hot">≈ 2^${c.circuitDepthExponent} qubit-cycles</span></div>` +
+    `<div class="budget-row total"><span>Total circuit depth (historical construction)</span><span class="bv hot">≈ 2^${c.circuitDepthExponent} logical circuit layers</span></div>` +
     `<div class="budget-row"><span>Logical qubits required</span><span class="bv">~${c.logicalQubits.toLocaleString()}</span></div>` +
     `<div class="budget-row"><span>Practical threat</span><span class="bv ${a.practicalThreat === 'strong' ? 'ok' : 'warn'}">${a.practicalThreat.toUpperCase()}</span></div>` +
     `</div>` +
     `<p class="budget-note">${c.note}</p>` +
-    `<p class="budget-caveat">⚠ Lower-bound–style estimate (Grassl et al. 2016), <strong>not</strong> a wall-clock prediction. The headline “2^${iterExp}” counts <em>iterations</em>; the real work is iterations × cost-per-iteration. That gap is the difference between pop-science Grover and serious cost analysis.</p>`;
+    `<p class="budget-caveat">Historical logical-circuit estimate (Grassl et al. 2016), <strong>not</strong> a wall-clock prediction. The headline “2^${iterExp}” counts <em>iterations</em>; the real work is iterations × cost-per-iteration. Depth counts sequential circuit layers; width counts logical qubits. Qubit-cycles measure space-time volume and require a width schedule. Physical error-correction overhead and wall-clock timing are not included. This construction estimate is not a universal lower bound. <a href="https://eprint.iacr.org/2019/854">Resource accounting and later constructions</a>.</p>`;
 }
 budgetSelector.addEventListener('change', renderBudget);
 renderBudget();
@@ -1434,12 +1434,12 @@ Grover does not see inside it.</div>
 
       <div class="insight-box">KEY INSIGHT: Under idealized assumptions, circuit depth matters more than the qubit count.
 
-AES-128 requires ~2^82 logical qubit-cycles \u2014 not just 2^64 oracle calls.
+AES-128 requires ~2^82 logical circuit layers \u2014 not just 2^64 oracle calls.
 Each Grover iteration requires running the entire AES circuit coherently
 inside the quantum computer. This makes Grover attacks on AES significantly
 more expensive in practice than the asymptotic 2^(n/2) figure suggests.
 
-These are not practical attack estimates \u2014 they represent idealized lower bounds.
+These are not practical attack estimates \u2014 they describe a historical logical-circuit construction, not universal lower bounds.
 
 Source: Grassl et al. (2016); NIST/ETSI practical cost estimates (2024)</div>
 

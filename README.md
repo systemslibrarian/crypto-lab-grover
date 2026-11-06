@@ -92,3 +92,7 @@ For classroom use, see the [teaching guide](docs/TEACHING.md) — lesson plans (
 *Part of the [Crypto Lab](https://crypto-lab.systemslibrarian.dev/) suite.*
 
 *"So whether you eat or drink or whatever you do, do it all for the glory of God." — 1 Corinthians 10:31*
+
+## Research scope review — November 2026
+
+CL3168: Historical Grassl et al. construction values are retained. Depth is measured in sequential logical circuit layers; width in logical qubits. Qubit-cycle volume needs a width schedule. These are not universal lower bounds or physical runtime predictions. Source: https://eprint.iacr.org/2019/854 (resource definitions and comparison table); its newer numerical estimates were not adopted.
