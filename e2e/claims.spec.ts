@@ -399,8 +399,8 @@ test('every AES key size is halved, and the budget multiplies back to its own to
     await page.locator('#budget-selector').selectOption(String(bits));
     const budget = (await page.locator('#budget-box').textContent()) ?? '';
     const iters = num(budget, /Grover iterations \(oracle calls\)≈ 2\^(\d+)/);
-    const perCall = num(budget, /coherent\)≈ 2\^(\d+) qubit-cycles/);
-    const totalDepth = num(budget, /Total circuit depth \(idealized lower bound\)≈ 2\^(\d+)/);
+    const perCall = num(budget, /total divided by iterations\)≈ 2\^(\d+) logical circuit layers/);
+    const totalDepth = num(budget, /Total circuit depth \(historical construction\)≈ 2\^(\d+)/);
     expect(iters).toBe(bits / 2);
     expect(iters + perCall, `AES-${bits}: budget factors do not multiply to the stated total`).toBe(totalDepth);
     // The headline the panel exists to puncture: depth ≫ oracle calls.
