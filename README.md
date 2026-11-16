@@ -95,4 +95,4 @@ For classroom use, see the [teaching guide](docs/TEACHING.md) — lesson plans (
 
 ## Research scope review — November 2026
 
-CL3168: Historical Grassl et al. construction values are retained. Depth is measured in sequential logical circuit layers; width in logical qubits. Qubit-cycle volume needs a width schedule. These are not universal lower bounds or physical runtime predictions. Source: https://eprint.iacr.org/2019/854 (resource definitions and comparison table); its newer numerical estimates were not adopted.
+Brandon Langenberg, Hai Pham and Rainer Steinwandt, *Reducing the Cost of Implementing AES as a Quantum Circuit* (2019), https://eprint.iacr.org/2019/854: historical Grassl et al. construction values are retained. Depth is measured in sequential logical circuit layers; width in logical qubits. Qubit-cycle volume needs a width schedule. These are not universal lower bounds or physical runtime predictions. Source: https://eprint.iacr.org/2019/854 (resource definitions and comparison table); its newer numerical estimates were not adopted.
