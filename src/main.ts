@@ -321,7 +321,7 @@ function renderState(): void {
   if (resting && effK === kStar) {
     banner.className = 'banner optimal';
     banner.style.display = 'block';
-    banner.textContent = `\u2713 Optimal k* reached \u2014 measuring now would succeed with ${(sub.successProbability * 100).toFixed(2)}% probability`;
+    banner.textContent = `\u2713 Optimal k* reached \u2014 measuring now would succeed with ${formatProbability(sub.successProbability, 2)}% probability`;
   } else if (resting && effK > kStar) {
     banner.className = 'banner overshoot';
     banner.style.display = 'block';
@@ -335,7 +335,7 @@ function renderState(): void {
   liveRegion.textContent =
     `${phaseSpoken}Iteration ${effK} of ${kStar} optimal. ` +
     `Target amplitude ${sub.targetAmplitude.toFixed(3)}. ` +
-    `Success probability ${(sub.successProbability * 100).toFixed(1)}%.`;
+    `Success probability ${formatProbability(sub.successProbability, 1)}%.`;
 }
 
 /* ── Bar chart (signed amplitudes about a zero baseline) ──── */
@@ -419,17 +419,27 @@ function renderBars(state: GroverSubStep): void {
     `Signed amplitude bar chart. Bars above the centre line are positive, below are negative.` +
     ` Target amplitude ${state.targetAmplitude.toFixed(4)}, other amplitudes ${state.nonTargetAmplitude.toFixed(4)},` +
     ` mean ${state.mean.toFixed(4)}.${phaseNote}` +
-    ` Success probability ${(state.successProbability * 100).toFixed(1)}%.`
+    ` Success probability ${formatProbability(state.successProbability, 1)}%.`
   );
 }
 
 /* ── Amplitude values panel ────────────────────────────── */
 function renderAmpValues(state: GroverSubStep): void {
   ampValues.innerHTML =
-    `<span class="highlight">Target amplitude:     ${fmtAmp(state.targetAmplitude)}</span>  → <span class="prob">probability: ${(state.successProbability * 100).toFixed(2)}%</span>\n` +
+    `<span class="highlight">Target amplitude:     ${fmtAmp(state.targetAmplitude)}</span>  → <span class="prob">probability: ${formatProbability(state.successProbability, 2)}%</span>\n` +
     `Other amplitude:      ${fmtAmp(state.nonTargetAmplitude)}  (each of the ${(N - 1).toLocaleString()} non-target states)\n` +
     `Mean amplitude:       ${fmtAmp(state.mean)}\n\n` +
     `<span style="color:var(--text-dim);font-size:.7rem">Classically simulated amplitude evolution (not a real quantum computation)</span>`;
+}
+
+/** Keep rounding from turning a possible outcome into an impossible or certain one. */
+function formatProbability(probability: number, decimals: number): string {
+  const percent = probability * 100;
+  let rounded = percent.toFixed(decimals);
+  while (probability > 0 && probability < 1 && (Number(rounded) === 0 || Number(rounded) === 100)) {
+    rounded = percent.toFixed(++decimals);
+  }
+  return rounded;
 }
 
 function fmtAmp(v: number): string {
@@ -450,7 +460,7 @@ function renderMathLayer(state: GroverSubStep): void {
   mathLayer.innerHTML =
     `<span class="ml-term">θ = asin(1/√N) = asin(1/√${state.N.toLocaleString()}) = ${deg(theta).toFixed(2)}°</span>\n` +
     `<span class="ml-term">${angleLine}</span>\n` +
-    `<span class="ml-term hot">P(target) = sin²(angle) = ${(state.successProbability * 100).toFixed(2)}%</span>\n` +
+    `<span class="ml-term hot">P(target) = sin²(angle) = ${formatProbability(state.successProbability, 2)}%</span>\n` +
     `<span class="ml-term">k* = ⌊π / (4θ)⌋ = ${state.optimalIterations}` +
     ` ·  query cost ≈ O(√N) = O(√${state.N.toLocaleString()})</span>\n` +
     `<span class="ml-note">k* is floored — the rotation rarely lands exactly on the target axis, so the optimum is approximate. ` +
@@ -462,7 +472,7 @@ function resetMeasurement(): void {
   measureDots.innerHTML = '';
   const sub = simulateGroverSubStep(n, targetIndex, currentK, subPhase);
   measureStats.textContent =
-    `Each measurement returns one outcome, with P(target) = ${(sub.successProbability * 100).toFixed(1)}%. ` +
+    `Each measurement returns one outcome, with P(target) = ${formatProbability(sub.successProbability, 1)}%. ` +
     `Press "Measure ×100" to sample the current state.`;
 }
 
@@ -483,7 +493,7 @@ function runMeasurements(): void {
   measureDots.innerHTML = '';
   measureDots.appendChild(frag);
 
-  const theoretical = (p * 100).toFixed(1);
+  const theoretical = formatProbability(p, 1);
   measureStats.innerHTML =
     `<span class="m-hit-text">■ Target: ${hits}/100</span> ` +
     `<span class="m-miss-text">■ Wrong: ${shots - hits}/100</span> ` +
@@ -508,13 +518,15 @@ function renderMisconception(state: GroverSubStep): void {
     reality = 'The oracle only flips the *phase* of the marked state (its amplitude goes negative). It never reveals which key is correct — the information is hidden in interference, not read out.';
   } else if (decompose && state.subPhase === 'diffusion') {
     myth = 'Diffusion “measures” the state and keeps the best amplitude.';
-    reality = 'Diffusion is a deterministic reflection of every amplitude about their mean — no measurement happens. The phase-flipped target ends up above the mean, so it grows; nothing is observed yet.';
+    reality = 'Diffusion reflects each amplitude about the post-oracle mean. The target’s probability rises on the approach to the first peak and falls on the next iteration. Measurement happens only when you sample the state.';
   } else if (effK > kStar) {
     myth = 'More Grover iterations are always better.';
     reality = 'Past k* the state vector rotates *beyond* the target axis, so success probability falls again. Grover needs the right number of steps, not the most.';
   } else if (effK === kStar && effK > 0) {
-    myth = 'At k* the answer is guaranteed.';
-    reality = `At k* probability peaks (~${(state.successProbability * 100).toFixed(0)}%) but measurement is still a sample, not a certainty. Press “Measure ×100” to see the spread.`;
+    myth = 'The best iteration guarantees a hit at every search size.';
+    reality = state.N === 4
+      ? 'With one marked item among four, one iteration gives the target amplitude 1. Its measurement probability is exactly 100%. Every ideal measurement here returns the target.'
+      : `At k* the marked item has a ${formatProbability(state.successProbability, 2)}% chance of being measured. An individual measurement can miss, and a sample of 100 can still contain only hits.`;
   } else {
     myth = 'Quantum search tries all keys in parallel and then reads the winner.';
     reality = 'Amplitudes interfere so the marked state grows and the rest shrink; measurement is probabilistic. This is a quadratic (√N) speedup — not the exponential break Shor gives RSA.';
@@ -797,7 +809,7 @@ function renderRotation(sub: GroverSubStep): void {
   ctx.fillText(`angle = ${deg.toFixed(1)}°   (2θ per step, θ = ${(theta * 180 / Math.PI).toFixed(1)}°)`, cx, H - 22);
   ctx.fillStyle = gold;
   ctx.font = '11px Courier New';
-  ctx.fillText(`P(target) = sin²(angle) = ${(sub.successProbability * 100).toFixed(1)}%`, cx, H - 6);
+  ctx.fillText(`P(target) = sin²(angle) = ${formatProbability(sub.successProbability, 1)}%`, cx, H - 6);
 
   canvas.setAttribute('aria-label',
     `Grover rotation diagram. The state vector is at ${deg.toFixed(0)} degrees from the wrong-answer axis;` +

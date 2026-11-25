@@ -242,6 +242,20 @@ test('the oracle flips only the target’s sign and diffusion lands on the next 
 // Measurement: probability is not certainty
 // ---------------------------------------------------------------------------
 
+test('the lesson distinguishes the exact four-item peak from a near-certain peak', async ({ page }) => {
+  await page.goto('./?n=2&target=3&steps=1&measure=1');
+  await expect(page.locator('.mc-real')).toContainText('exactly 100%');
+  await expect(page.locator('#measure-stats')).toContainText('Target: 100/100');
+  await expect(page.locator('#measure-dots .miss')).toHaveCount(0);
+
+  await page.goto('./?n=12&target=3&steps=50&measure=1');
+  const stats = (await page.locator('#measure-stats').textContent()) ?? '';
+  const theoretical = num(stats, /Theoretical: ([\d.]+)%/);
+  expect(theoretical).toBeGreaterThan(99.9);
+  expect(theoretical).toBeLessThan(100);
+  await expect(page.locator('.mc-real')).toContainText('can miss');
+});
+
 test('measurement outcomes partition the 100 shots and quote the state’s own probability', async ({ page }) => {
   test.setTimeout(HEAVY);
   await page.goto('./?n=4&target=7');

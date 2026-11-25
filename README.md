@@ -68,9 +68,9 @@ Beyond free-play, the demo is built to teach actively:
 
 - **Guided lesson** — a 5-stage path (search setup → oracle + diffusion → rotation model → overshoot → crypto impact) that drives the simulator stage by stage.
 - **Prediction mode** — commit a guess (will probability rise, fall, or hold?) before each Step reveals the answer.
-- **Reactive misconception panel** — surfaces the right correction at the moment you're likely to form the wrong idea (oracle ≠ "checks all keys", overshoot, k* ≠ certainty, Grover ≠ Shor).
+- **Reactive misconception panel** — surfaces the right correction at the moment you're likely to form the wrong idea (oracle ≠ "checks all keys", overshoot, exact success for four items versus near-certain peaks at larger sizes, Grover ≠ Shor).
 - **Compare the mental models** — toggle the *same* overshoot fact across algebra, geometry, and amplitude views.
-- **Measurement simulator** — "Measure ×100" samples the current state so probability ≠ certainty becomes concrete.
+- **Measurement simulator** — "Measure ×100" samples the current state. At the four-item peak every shot hits. At larger sizes a sample can contain 100 hits even when an individual shot can miss.
 - **Math layer** — the live equations (θ, sin²((2k+1)θ), k*) with the current numbers plugged in.
 - **Oracle cost budget** — separates the headline 2^(n/2) *iterations* from the cost *per* oracle call (full AES circuit), with logical-qubit and depth figures.
 - **Challenge mode** — short questions with immediate, explained feedback.

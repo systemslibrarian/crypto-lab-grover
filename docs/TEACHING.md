@@ -22,7 +22,7 @@ By the end, a learner should be able to explain, without hand-waving:
 4. What **diffusion** does — reflects amplitudes about the mean.
 5. Why oracle + diffusion is a **rotation** by 2θ in a 2-D subspace.
 6. Why there's an **optimal stopping point** (k*) and why overshoot lowers success.
-7. Why measuring gives a **probability**, not a certainty.
+7. How the target amplitude sets its measurement probability, including exact success for one marked item among four.
 8. Why **AES-128** is weakened (≈2⁶⁴ idealized) but not instantly broken.
 9. Why **AES-256** remains a strong post-quantum symmetric choice.
 10. Why **Grover and Shor** are different threats with different mitigations.
@@ -34,7 +34,7 @@ By the end, a learner should be able to explain, without hand-waving:
 | 0–2 min | Frame the problem: one correct key among N. Ask: "classically, how many tries on average?" (≈N/2.) | n-slider at 4 |
 | 2–5 min | Run **Guided Lesson** stages 1–2. Pause on the oracle: the target bar goes *negative*. Stress: nothing is read out yet. | Guided Lesson → Next |
 | 5–8 min | Stage 3 (rotation) + stage 4 (overshoot). Ask the overshoot prediction *before* clicking. | Lesson + Prediction mode |
-| 8–11 min | "Measure ×100." Empirical vs theoretical. Why k* isn't certainty. | Measure ×100 |
+| 8–11 min | Measure at the first peak for n = 4 (about 96.13%), then n = 2 (exactly 100%). Which setting allows a miss? | Measure ×100 |
 | 11–14 min | Stage 5: map the math to AES. Open **The Real Cost of One Oracle Call**; contrast iterations vs cost-per-call. | Budget panel, key-size selector |
 | 14–15 min | Close on Grover ≠ Shor: quadratic dent vs exponential break. | Grover vs Shor table |
 
