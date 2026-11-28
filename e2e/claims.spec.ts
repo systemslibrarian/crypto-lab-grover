@@ -355,11 +355,11 @@ test('resizing the search space rescales N, k* and the race in step', async ({ p
     // as the glossary defines it; diffusion is counted separately.
     const classical = (await page.locator('#race-classical-stats').textContent()) ?? '';
     const quantum = (await page.locator('#race-quantum-stats').textContent()) ?? '';
-    expect(num(classical, /Expected queries: N\/2 = ([\d,]+)/)).toBe(N / 2);
+    expect(num(classical, /Expected queries: \(N\+1\)\/2 = ([\d,.]+)/)).toBe((N + 1) / 2);
     const kStar = num(quantum, /Oracle queries: k\* = ([\d,]+)/);
     const reflections = num(quantum, /Reflections applied: ([\d,]+)/);
     expect(kStar).toBe(kStarFor(n));
-    expect(reflections, 'reflections are 2·k*+1').toBe(2 * kStar + 1);
+    expect(reflections, 'reflections are 2·k*').toBe(2 * kStar);
     expect(kStar, 'Grover used at least as many oracle queries as classical search')
       .toBeLessThan(N / 2);
 
@@ -624,7 +624,7 @@ test('the race bars honour the axis the caption claims, at every n', async ({ pa
     await setQubits(page, n);
 
     const kStar = kStarFor(n);
-    const classicalQueries = 2 ** n / 2;
+    const classicalQueries = (2 ** n + 1) / 2;
     const trueShare = kStar / classicalQueries;
 
     const { classical, quantum } = await raceBarShares(page);
@@ -671,11 +671,14 @@ test('the race status quotes the oracle-query count, not the reflection count', 
     const status = (await page.locator('#race-quantum-status').textContent()) ?? '';
     expect(num(status, /k\* = ([\d,]+) oracle quer/), `n=${n}: status quotes k*`).toBe(kStar);
 
+    const theta = Math.asin(1 / Math.sqrt(2 ** n));
+    const expectedPercent = 100 * Math.sin((2 * kStar + 1) * theta) ** 2;
+    expect(num(status, /P\(target\) ≈ ([\d.]+)%/)).toBeCloseTo(expectedPercent, 1);
     const stats = (await page.locator('#race-quantum-stats').textContent()) ?? '';
     expect(num(stats, /Oracle queries: k\* = ([\d,]+)/), `n=${n}: stats quote k*`).toBe(kStar);
     // The reflection count is still shown, but never called a query.
-    expect(num(stats, /Reflections applied: ([\d,]+)/), `n=${n}: reflections are 2k*+1`)
-      .toBe(2 * kStar + 1);
+    expect(num(stats, /Reflections applied: ([\d,]+)/), `n=${n}: reflections are 2k*`)
+      .toBe(2 * kStar);
   }
 });
 

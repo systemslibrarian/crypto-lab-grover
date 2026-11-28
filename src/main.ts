@@ -820,39 +820,30 @@ function renderRotation(sub: GroverSubStep): void {
 
 /* ── Race panel ────────────────────────────────────────── */
 function renderRace(): void {
-  const kStar = simulateGroverState(n, targetIndex, 0).optimalIterations;
   const quantumQueries = groverOracleQueries(n);   // k* — one oracle call per iteration
-  const totalReflections = groverQueryCount(n);    // 2k*+1 — NOT queries; see grover.ts
-  const classicalExpected = N / 2;
+  const kStar = quantumQueries;
+  const probability = simulateGroverState(n, targetIndex, kStar).successProbability;
+  const totalReflections = groverQueryCount(n);
+  const classicalExpected = (N + 1) / 2;
 
   /* Stats text */
   raceClassicalStats.textContent =
-    `Strategy: try random keys until target found\n` +
-    `Expected queries: N/2 = ${classicalExpected.toLocaleString()}`;
+    `Strategy: check keys without replacement until the target is found\n` +
+    `Expected queries: (N+1)/2 = ${classicalExpected.toLocaleString()}`;
 
   raceQuantumStats.textContent =
     `Strategy: amplitude amplification\n` +
     `Oracle queries: k* = ${quantumQueries.toLocaleString()}\n` +
-    `Reflections applied: ${totalReflections.toLocaleString()} (oracle + diffusion per iteration, plus the initial superposition)`;
+    `Reflections applied: ${totalReflections.toLocaleString()} (one oracle reflection and one diffusion reflection per iteration)`;
 
-  /* Shared-scale race: both bars live on ONE query axis, so equal width means
-     equal oracle queries. Grover (k* queries) finishes while the classical
-     search (≈N/2 queries) is still far from done — the honest picture the old
-     per-bar normalisation hid.
-
-     The quantum bar is scaled by k*, NOT by 2k*+1. Diffusion is not an oracle
-     call, so the reflection count does not belong on a query axis: it drew the
-     bar ~2x too wide throughout, and at n = 2 and n = 3 it exceeded the
-     classical figure outright, so `Math.min(1, ...)` pinned both bars to 100%
-     and the panel showed a dead heat directly under a caption promising Grover
-     got there first. */
+  // Equal widths represent equal numbers of oracle queries on this shared axis.
   if (raceTimer !== null) { clearInterval(raceTimer); raceTimer = null; }
   if (raceTimeout !== null) { clearTimeout(raceTimeout); raceTimeout = null; }
 
   const quantumQ = quantumQueries;                       // k* oracle queries to find
-  const classicalQ = classicalExpected;                  // ~N/2 queries expected
+  const classicalQ = classicalExpected;                  // mean position without replacement
   const trueShare = quantumQ / classicalQ;               // fraction of the timeline, to scale
-  const pQuantum = Math.min(1, trueShare);               // fraction of timeline when Grover finds
+  const pQuantum = Math.min(1, trueShare);               // fraction of timeline at the measurement point
   /* Keep the quantum bar visible when it is a sliver of the classical work —
      but say so, because a floored bar is no longer to scale and the caption
      above it claims that equal width means equal queries. */
@@ -862,6 +853,7 @@ function renderRace(): void {
   const scaleNote = belowScale
     ? ` (bar drawn at minimum width — to scale it would be ${(trueShare * 100).toFixed(2)}% of the classical timeline)`
     : '';
+  const measurementStatus = `Optimal measurement point after k* = ${kStar.toLocaleString()} oracle ${kStar === 1 ? 'query' : 'queries'}. P(target) ≈ ${formatProbability(probability, 2)}%${scaleNote}`;
   raceQuantumBar.classList.toggle('below-scale', belowScale);
 
   raceQuantumBar.classList.remove('found');
@@ -874,8 +866,8 @@ function renderRace(): void {
     raceClassicalBar.style.width = '100%';
     raceQuantumBar.style.width = `${quantumDisplayW}%`;
     raceQuantumBar.classList.add('found');
-    raceQuantumStatus.textContent = `✓ Found after k* = ${kStar.toLocaleString()} oracle ${kStar === 1 ? 'query' : 'queries'}${scaleNote}`;
-    raceClassicalStatus.textContent = `scanned ~${classicalQ.toLocaleString()} keys to match`;
+    raceQuantumStatus.textContent = measurementStatus;
+    raceClassicalStatus.textContent = `Expected checks: ${classicalQ.toLocaleString()}`;
   }
 
   if (reduceMotion || n > 16) {
@@ -892,14 +884,14 @@ function renderRace(): void {
       raceClassicalBar.style.width = `${classicalW}%`;
       // Snap the quantum bar to its (possibly sliver) display width once found.
       const found = quantumW >= 100;
-      raceQuantumBar.style.width = found ? `${quantumDisplayW}%` : `${quantumW}%`;
+      raceQuantumBar.style.width = found ? `${quantumDisplayW}%` : `${(quantumW / 100) * quantumDisplayW}%`;
       if (found) {
         raceQuantumBar.classList.add('found');
-        raceQuantumStatus.textContent = `✓ Found after k* = ${kStar.toLocaleString()} oracle ${kStar === 1 ? 'query' : 'queries'}${scaleNote}`;
+        raceQuantumStatus.textContent = measurementStatus;
       } else {
         raceQuantumStatus.textContent = 'amplifying…';
       }
-      raceClassicalStatus.textContent = `scanned ~${Math.round((classicalW / 100) * classicalQ).toLocaleString()} of ${classicalQ.toLocaleString()} keys`;
+      raceClassicalStatus.textContent = `${classicalW.toFixed(0)}% of the expected classical work`;
       if (p >= 1) { if (raceTimer !== null) { clearInterval(raceTimer); raceTimer = null; } }
     }
     raceTimer = window.setInterval(tick, tickMs);
@@ -907,7 +899,7 @@ function renderRace(): void {
 
   /* Speedup table.
      These are N/√N — a FULL classical scan against Grover's ≈√N. The race
-     panel above compares the classical *expected* N/2 against k* = (π/4)√N,
+     panel above compares the classical expectation (N+1)/2 against k* = (π/4)√N,
      which is a smaller ratio by π/2: at n = 16 the panel's own numbers give
      32,768 / 201 = 163x where this table says 256x. Both are correct about
      their own quantities, so the table now states which one it is measuring
@@ -942,7 +934,7 @@ const AES_SIGNATURE_DATA: Record<number, {
     keyBits: 128,
     classical: '2^128',
     grover: '2^64',
-    reality: 'Potentially feasible for a very large quantum computer, but circuit depth (~2^82 logical circuit layers) makes this far harder than headline numbers suggest.',
+    reality: 'The estimated circuit depth is about 2^82 logical layers. A query count alone cannot establish practical feasibility.',
     explanation: `Grover's algorithm reduces brute-force search from 2^128 to ~2^64 operations under idealized assumptions.\n\nWhile this is a major theoretical improvement, it does not represent a practical near-term attack due to:\n• quantum circuit depth (~2^82 logical circuit layers per Grassl et al.)\n• oracle construction cost (each iteration runs a full AES-128 circuit coherently)\n• error correction requirements (~2,953 logical qubits needed)\n\nAES-128 is often discussed as having ~64-bit effective brute-force resistance under idealized Grover assumptions. ${AES_GUIDANCE.nist} ${AES_GUIDANCE.nsa} ${AES_GUIDANCE.lab}`,
   },
   192: {
@@ -1034,7 +1026,7 @@ function setN(next: number): void {
 const LESSON: LessonStage[] = [
   {
     title: '1 · The search problem',
-    body: `<p>We have <strong>N = 2⁴ = 16</strong> possible keys and exactly <strong>one</strong> is correct. A classical attacker tries keys at random and expects to check about <strong>N/2 = 8</strong> before hitting it.</p>
+    body: `<p>We have <strong>N = 2⁴ = 16</strong> possible keys and exactly <strong>one</strong> is correct. A classical attacker tries keys in random order without replacement and expects to try <strong>(N+1)/2 = 8.5</strong> before hitting it.</p>
 <p>Grover will find it in only about <strong>√N ≈ 4</strong> oracle queries. Watch the bars below: right now every key is equally likely.</p>
 <p class="lesson-do">Try it: when you press <em>Next</em>, we’ll run one Grover step as its two halves.</p>`,
     apply: () => { setN(4); targetIndex = 7; decompose = false; decomposeToggle.checked = false; currentK = 0; subPhase = 'superposition'; renderState(); document.getElementById('panel-a')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); },
@@ -1434,7 +1426,7 @@ Grover does not see inside it.</div>
         <thead><tr><th>n</th><th>Speedup</th><th>Scale</th></tr></thead>
         <tbody id="speedup-body"></tbody>
       </table>
-      <p class="race-axis-note">Speedup here is N &divide; &radic;N &mdash; a full classical scan against Grover&rsquo;s &asymp;&radic;N. The race above uses the classical <em>expected</em> N/2 against k* = (&pi;/4)&radic;N, so its ratio is smaller by &pi;/2. Same quadratic speedup, two different pairs of quantities.</p>
+      <p class="race-axis-note">Speedup here is N &divide; &radic;N &mdash; a full classical scan against Grover&rsquo;s &asymp;&radic;N. The race above uses the classical mean of (N+1)/2 against k* ≈ (&pi;/4)&radic;N. For large N, its ratio is smaller by a factor approaching &pi;/2. Same quadratic speedup, two different pairs of quantities.</p>
     </section>
 
     <!-- Panel C: AES & Hash Impact -->
@@ -1453,7 +1445,7 @@ more expensive in practice than the asymptotic 2^(n/2) figure suggests.
 
 These are not practical attack estimates \u2014 they describe a historical logical-circuit construction, not universal lower bounds.
 
-Source: Grassl et al. (2016); NIST/ETSI practical cost estimates (2024)</div>
+Source: <a href="https://arxiv.org/abs/1512.04965">Grassl et al., Applying Grover’s algorithm to AES</a> (2016)</div>
 
       <div class="hash-table-wrap" tabindex="0" role="region" aria-label="Hash function quantum impact table (scrollable)">
         <table class="hash-table">
@@ -1471,13 +1463,7 @@ Source: Grassl et al. (2016); NIST/ETSI practical cost estimates (2024)</div>
       <div class="fix-box">
         <h3>The Mitigation</h3>
         <p>Under idealized Grover assumptions, the oracle-query exponent is halved. Doubling key length restores that query margin; it is a conservative parameter choice, not a general NIST transition requirement.</p>
-        <p style="margin-top:.5rem">AES-128 \u2192 AES-256 &ensp;(already standardized)<br>
-SHA-256 \u2192 SHA-512 &ensp;(straightforward upgrade)<br>
-HMAC-SHA-256 \u2192 HMAC-SHA-512</p>
-        <p style="margin-top:.5rem">Unlike Shor\u2019s algorithm \u2014 which requires entirely new cryptographic
-algorithms \u2014 Grover\u2019s threat to symmetric crypto is mitigated by a parameter change alone.</p>
-        <p style="margin-top:.5rem">Post-quantum cryptography (ML-KEM, ML-DSA) is required for public-key
-systems. For symmetric systems, longer keys are sufficient.</p>
+        <p style="margin-top:.5rem">AES-256 offers extra key-search margin. SHA-512 offers a larger preimage margin where digest length permits. Choose parameters for the protocol, property, and security lifetime involved.</p>
       </div>
 
       <details>
@@ -1491,7 +1477,7 @@ systems. For symmetric systems, longer keys are sufficient.</p>
             <tr><td>Impact on AES</td><td>Halves security</td><td>None</td></tr>
             <tr><td>Impact on RSA</td><td>None</td><td>Complete break</td></tr>
             <tr><td>Impact on ECC</td><td>None</td><td>Complete break</td></tr>
-            <tr><td>Fix</td><td>Double key length</td><td>Replace algorithm</td></tr>
+            <tr><td>Fix</td><td>Review parameters for the application</td><td>Replace algorithm</td></tr>
             <tr><td>NIST response</td><td>Current applications may continue AES-128/192/256; practical costs matter</td><td>New standards (ML-KEM, ML-DSA)</td></tr>
           </tbody>
         </table>

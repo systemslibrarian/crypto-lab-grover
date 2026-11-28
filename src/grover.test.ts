@@ -215,9 +215,9 @@ describe('simulateGroverSubStep — decomposition agrees with the closed form', 
 });
 
 describe('groverQueryCount', () => {
-  it('equals 2*k* + 1', () => {
+  it('counts both reflections per iteration', () => {
     for (let n = MIN_QUBITS; n <= MAX_QUBITS; n += 1) {
-      expect(groverQueryCount(n)).toBe(2 * optimalIterationsForN(2 ** n) + 1);
+      expect(groverQueryCount(n)).toBe(2 * optimalIterationsForN(2 ** n));
     }
   });
 
@@ -228,12 +228,8 @@ describe('groverQueryCount', () => {
     expect(groverQueryCount(n)).toBeLessThan(4000);
   });
 
-  // 2k*+1 is NOT below N/2 across the whole slider range — it exceeds it at
-  // n = 2 (3 vs 2) and n = 3 (5 vs 4). This test pins that, so nobody puts the
-  // reflection count back on the query axis and rediscovers the dead-heat bars.
-  it('is the reflection count, and exceeds classical N/2 at the smallest n', () => {
-    expect(groverQueryCount(2)).toBeGreaterThan(2 ** 2 / 2);
-    expect(groverQueryCount(3)).toBeGreaterThan(2 ** 3 / 2);
+  it('counts two reflections for a four-item search', () => {
+    expect(groverQueryCount(2)).toBe(2);
   });
 });
 
@@ -255,10 +251,10 @@ describe('groverOracleQueries', () => {
 });
 
 describe('classicalSearch', () => {
-  it('reports expected queries N/2', async () => {
+  it('reports the mean position in a search without replacement', async () => {
     for (const N of [4, 16, 1024]) {
       const { expected } = await classicalSearch(N);
-      expect(expected).toBe(N / 2);
+      expect(expected).toBe((N + 1) / 2);
     }
   });
 

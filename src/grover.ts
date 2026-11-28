@@ -308,7 +308,7 @@ export async function classicalSearch(N: number): Promise<{
   const queriesUsed = cryptoRandomInt(N) + 1;
   return {
     queriesUsed,
-    expected: N / 2,
+    expected: (N + 1) / 2,
   };
 }
 
@@ -325,17 +325,10 @@ export function groverOracleQueries(n: number): number {
 }
 
 /**
- * Total REFLECTIONS applied, 2*k* + 1 — the initial superposition plus an
- * oracle and a diffusion per iteration.
- *
- * This is not a query count: diffusion touches no oracle. Racing this against
- * the classical N/2 overstates Grover's cost by ~2x, and below n = 4 it
- * overstates it past the classical figure entirely (n = 2: 3 vs 2), which is
- * how the race bars once rendered a dead heat at the slider's own minimum.
- * Use `groverOracleQueries` for anything on the query axis.
+ * Each iteration applies two reflections. Initial state preparation precedes the iterations.
  */
 export function groverQueryCount(n: number): number {
   assertQubitRange(n);
   const kStar = optimalIterationsForN(2 ** n);
-  return 2 * kStar + 1;
+  return 2 * kStar;
 }
