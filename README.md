@@ -2,7 +2,7 @@
 
 ## What It Is
 
-Grover's algorithm (Lov Grover, 1996) is a quantum search algorithm that finds a marked item in an unstructured search space of N items using O(√N) queries — a quadratic speedup over classical brute force. This demo classically simulates the complete amplitude amplification process with exact mathematical formulas: oracle phase kickback, inversion-about-mean diffusion, and probability oscillation including overshoot past optimal iterations. The security model is symmetric cryptography — Grover is the quantum threat to AES, SHA, and HMAC that Shor's algorithm does not touch. In unstructured black-box search with one marked item, bounded-error quantum algorithms require Ω(√N) oracle queries. Grover matches that bound.
+Grover's algorithm (Lov Grover, 1996) is a quantum search algorithm that finds a marked item in an unstructured search space of N items using O(√N) queries — a quadratic speedup over classical brute force. This demo classically simulates the complete amplitude amplification process with exact mathematical formulas: oracle phase kickback, inversion-about-mean diffusion, and probability oscillation including overshoot past optimal iterations. The security model is symmetric cryptography — Grover is the quantum threat to AES, SHA, and HMAC that Shor's algorithm does not touch. In unstructured black-box search with one marked item, bounded-error quantum algorithms require Ω(√N) oracle queries. Grover matches that bound. Every run here has exactly one marked item. With M marked items, the rotation angle depends on M/N, and an unknown M needs a different stopping strategy.
 
 ## When to Use It
 
@@ -11,7 +11,7 @@ Grover's algorithm (Lov Grover, 1996) is a quantum search algorithm that finds a
 - **Seeing the oracle and diffusion separately** — A "Show oracle + diffusion sub-steps" toggle walks one iteration as two distinct reflections: the oracle flips the target amplitude *negative* (visible as a downward bar), then diffusion inverts every amplitude about the mean (the gold mean line on the signed bar chart). The decomposition is exact — it agrees with the closed form sin((2k+1)θ) to floating-point precision.
 - **Teaching the overshoot phenomenon** — The probability curve and the rotation view together show why running more Grover iterations past k* = π/4·√N actually decreases success probability: the state vector rotates *past* the target axis.
 - **Comparing Grover and Shor as complementary quantum threats** — The side-by-side comparison table clarifies which algorithms each one breaks and what the mitigation is.
-- **Do not use this for public-key cryptography threats** — Grover does not affect RSA, ECC, or Diffie-Hellman; that is Shor's domain.
+- **Do not use this for public-key cryptography threats** — Shor exploits factoring or discrete logarithms in RSA, ECC and finite-field Diffie-Hellman. It dominates generic search for these problems.
 
 ## Live Demo
 
@@ -24,9 +24,9 @@ You can deep-link a specific state with query parameters — e.g. `?steps=3` jum
 ## What Can Go Wrong
 
 - **Reading the key-halving as literal feasibility** — "AES-128 → 2^64" is an idealized query count; the per-iteration oracle is a full AES circuit and Grover is inherently sequential, so the real cost is far higher and AES-128 is not practically broken by it.
-- **Assuming Grover parallelizes the depth away** — it gives at most a quadratic speedup, and splitting it across machines splits the √N benefit; you cannot brute-force the circuit depth down the way classical search parallelizes.
+- **Assuming Grover parallelizes the depth away** — with S parallel coherent oracles searching equal partitions, the query depth scales as √(N/S). Four oracles roughly halve the depth; four classical workers can quarter the time for a full scan. [Zalka’s optimality result](https://arxiv.org/abs/quant-ph/9711070) gives the parallel query bound.
 - **Running too many iterations** — past k* = π/4·√N the state rotates past the target and success probability falls (overshoot); more iterations is not better.
-- **Applying it to the wrong primitive** — Grover threatens symmetric keys and hash preimages, not RSA/ECC/DH (that is Shor). Conflating the two misstates the risk.
+- **Applying it to the wrong primitive** — Grover models generic key or preimage search. Shor is the relevant comparison for RSA, ECC and finite-field Diffie-Hellman.
 - **Treating O(√N) as beatable** — the BBBV lower bound applies to unstructured black-box search. Structure in a particular problem can support a different algorithm.
 
 ## Real-World Usage
@@ -34,7 +34,7 @@ You can deep-link a specific state with query parameters — e.g. `?steps=3` jum
 - **Post-quantum symmetric sizing** — the [NIST PQC FAQ](https://csrc.nist.gov/projects/post-quantum-cryptography/faqs) permits current applications to continue AES-128, AES-192 or AES-256 and distinguishes practical cost from idealized Grover query counts. AES-256 is this lab’s conservative margin choice. NSA’s separate CNSA profile selects AES-256 for national security systems; CNSA 2.0 is not NIST’s blanket AES migration guidance.
 - **Hash security margins** — Grover halves preimage resistance, so SHA-256 still offers ~128-bit preimage security against a quantum attacker; output sizes are chosen with this in mind.
 - **Quantum resource estimation** — Grassl et al. and follow-up work estimate the qubits and circuit depth to run Grover on AES, feeding standards decisions.
-- **Migration planning** — symmetric primitives mostly need larger parameters rather than replacement, unlike public-key crypto, which Shor forces onto post-quantum schemes entirely.
+- **Migration planning** — larger keys or digests can restore a sound primitive’s ideal generic-search margin. Structural weaknesses and protocol or implementation errors need their own fixes.
 
 ## How to Run Locally
 
@@ -56,7 +56,7 @@ The unit suite pins the classical simulation to its reference math: `θ = asin(1
 
 ## Related Demos
 
-- [crypto-lab-shor](https://systemslibrarian.github.io/crypto-lab-shor/) — the complementary quantum threat: Shor breaks public-key (RSA/ECC) where Grover only dents symmetric.
+- [crypto-lab-shor](https://systemslibrarian.github.io/crypto-lab-shor/) — the complementary quantum threat: Shor exploits the structure of factoring and discrete logarithms.
 - [crypto-lab-harvest-vault](https://systemslibrarian.github.io/crypto-lab-harvest-vault/) — harvest-now-decrypt-later and the Q-Day timeline this speedup feeds into.
 - [crypto-lab-aes-modes](https://systemslibrarian.github.io/crypto-lab-aes-modes/) — the AES modes whose key sizes Grover pressures.
 - [crypto-lab-hash-zoo](https://systemslibrarian.github.io/crypto-lab-hash-zoo/) — the hash functions whose preimage resistance Grover halves.

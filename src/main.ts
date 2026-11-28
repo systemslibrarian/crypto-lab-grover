@@ -1146,7 +1146,7 @@ const CHALLENGES: Challenge[] = [
   {
     q: 'Is Shor’s algorithm a threat to AES?',
     options: [{ label: 'Yes — it breaks AES', correct: false }, { label: 'No — Shor targets public-key crypto', correct: true }],
-    explain: 'Shor breaks RSA/ECC/Diffie-Hellman (factoring & discrete log). AES is symmetric; only Grover applies, and only as a quadratic speedup.',
+    explain: 'Shor breaks RSA/ECC/Diffie-Hellman (factoring & discrete log). For AES, Grover gives a quadratic speedup for generic key search.',
   },
   {
     q: 'True or false: running more Grover iterations always increases success probability.',
@@ -1259,7 +1259,7 @@ Circuit depth: 2^${cost.circuitDepthExponent}</div>
     </div>
     <aside class="cl-hero-why" aria-label="Why it matters">
       <span class="cl-hero-why-label">WHY IT MATTERS</span>
-      <p class="cl-hero-why-text">Grover gives only a quadratic speedup and touches just symmetric primitives &mdash; halving the effective bits of AES and of hash <em>preimage</em> resistance, not breaking them. (Collision resistance is a separate sum &mdash; classically already n/2 by the birthday bound &mdash; so it is not what Grover halves.) That is why AES-256 stays safe and post-quantum worry centers on Shor, not Grover.</p>
+      <p class="cl-hero-why-text">Grover speeds up unstructured search. In an idealized model, finding an AES key or a hash <em>preimage</em> takes roughly the square root of the classical number of trials. This query count alone cannot tell us how long an attack would take. For RSA and elliptic curves, Shor’s algorithm exploits mathematical structure and poses the greater threat.</p>
     </aside>
   </header>
 
@@ -1270,7 +1270,8 @@ Circuit depth: 2^${cost.circuitDepthExponent}</div>
       <div class="reality-col">
         <h3>\u2713 This demo is</h3>
         <ul>
-          <li>A correct classical simulation of Grover's amplitude amplification using exact trigonometric formulas</li>
+          <li>A one-marked-item classical simulation of Grover's amplitude amplification using exact trigonometric formulas</li>
+          <li>With M marked items among N, the rotation angle depends on M/N. An unknown M calls for a different stopping strategy. This simulator sets M = 1.</li>
           <li>An educational tool for understanding the quadratic speedup and overshoot behavior of quantum search</li>
           <li>A visualization of Grover's impact on symmetric key sizes (AES-128/192/256) under idealized assumptions</li>
         </ul>
@@ -1420,7 +1421,7 @@ Grover does not see inside it.</div>
           <div class="race-stats" id="race-quantum-stats"></div>
         </div>
       </div>
-      <p class="race-axis-note">Both bars share one timeline: equal width = equal number of oracle queries. Grover reaches the target in k* queries while the classical search is still scanning. Where Grover&rsquo;s share of the timeline is too thin to see, the bar is drawn at a minimum width and labelled with its true share.</p>
+      <p class="race-axis-note">Both bars share one timeline: equal width = equal number of oracle queries. At k* queries the quantum bar reaches the first probability peak. The displayed probability is the chance of measuring the target in one run. Where Grover&rsquo;s share of the timeline is too thin to see, the bar is drawn at a minimum width and labelled with its true share.</p>
       <table class="speedup-table">
         <caption class="sr-only">Quantum speedup scaling by search space size, measured as a full classical scan of N against Grover&rsquo;s square-root-of-N queries</caption>
         <thead><tr><th>n</th><th>Speedup</th><th>Scale</th></tr></thead>
@@ -1463,7 +1464,7 @@ Source: <a href="https://arxiv.org/abs/1512.04965">Grassl et al., Applying Grove
       <div class="fix-box">
         <h3>The Mitigation</h3>
         <p>Under idealized Grover assumptions, the oracle-query exponent is halved. Doubling key length restores that query margin; it is a conservative parameter choice, not a general NIST transition requirement.</p>
-        <p style="margin-top:.5rem">AES-256 offers extra key-search margin. SHA-512 offers a larger preimage margin where digest length permits. Choose parameters for the protocol, property, and security lifetime involved.</p>
+        <p style="margin-top:.5rem">AES-256 offers extra key-search margin. SHA-512 offers a larger preimage margin where digest length permits. Choose parameters for the protocol, property, and security lifetime involved. Increasing a key or digest size cannot repair a flawed construction or implementation.</p>
       </div>
 
       <details>
@@ -1472,16 +1473,16 @@ Source: <a href="https://arxiv.org/abs/1512.04965">Grassl et al., Applying Grove
           <caption class="sr-only">Comparison of Grover and Shor quantum algorithms</caption>
           <thead><tr><th scope="col"></th><th scope="col">Grover</th><th scope="col">Shor</th></tr></thead>
           <tbody>
-            <tr><td>Targets</td><td>Symmetric crypto</td><td>Public-key crypto</td></tr>
+            <tr><td>Targets</td><td>Unstructured oracle search</td><td>Factoring and discrete logarithms</td></tr>
             <tr><td>Speedup</td><td>Quadratic (\u221AN)</td><td>Exponential (poly)</td></tr>
-            <tr><td>Impact on AES</td><td>Halves security</td><td>None</td></tr>
-            <tr><td>Impact on RSA</td><td>None</td><td>Complete break</td></tr>
-            <tr><td>Impact on ECC</td><td>None</td><td>Complete break</td></tr>
+            <tr><td>Impact on AES</td><td>Square-root reduction in ideal key-search queries</td><td>No known direct application</td></tr>
+            <tr><td>Impact on RSA</td><td>Generic search is slower than Shor here</td><td>Factors the modulus</td></tr>
+            <tr><td>Impact on ECC</td><td>Generic search is slower than Shor here</td><td>Solves the discrete logarithm</td></tr>
             <tr><td>Fix</td><td>Review parameters for the application</td><td>Replace algorithm</td></tr>
             <tr><td>NIST response</td><td>Current applications may continue AES-128/192/256; practical costs matter</td><td>New standards (ML-KEM, ML-DSA)</td></tr>
           </tbody>
         </table>
-        <p style="margin-top:.75rem;font-family:var(--mono);font-size:.72rem;color:var(--text-dim)">Grover is the lesser threat (quadratic speedup). Shor is the existential one (exponential speedup). Both must be addressed, but they require different responses. All speedup figures assume idealized quantum computation.</p>
+        <p style="margin-top:.75rem;font-family:var(--mono);font-size:.72rem;color:var(--text-dim)">The algorithms answer different questions. Grover counts oracle calls for generic search. Shor exploits the structure of factoring and discrete logarithms on a sufficiently capable quantum computer.</p>
       </details>
     </section>
   </div>
@@ -1582,7 +1583,7 @@ Source: <a href="https://arxiv.org/abs/1512.04965">Grassl et al., Applying Grove
       <dt>Preimage resistance</dt><dd>Hardness of finding an input for a given hash output. Grover takes it 2ⁿ → 2^(n/2).</dd>
       <dt>Collision resistance</dt><dd>Hardness of finding two inputs with the same output. Classical 2^(n/2); quantum BHT 2^(n/3), but memory-heavy — don’t confuse with the preimage rule.</dd>
       <dt>Symmetric cryptography</dt><dd>One shared key (AES). Only quadratically weakened by Grover.</dd>
-      <dt>Public-key cryptography</dt><dd>Separate public/private keys (RSA, ECC). Broken by Shor — Grover doesn’t apply.</dd>
+      <dt>Public-key cryptography</dt><dd>Schemes with separate public and private keys. For RSA and elliptic-curve schemes, Shor exploits mathematical structure and dominates generic search.</dd>
     </dl>
     </details>
   </section>

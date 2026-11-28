@@ -350,7 +350,7 @@ test('resizing the search space rescales N, k* and the race in step', async ({ p
     expect((await readIteration(page)).kStar).toBe(kStarFor(n));
     expect((await readMathLayer(page)).N).toBe(N);
 
-    // The race quotes N/2 classical queries against k* quantum ones — the
+    // The race quotes (N+1)/2 classical queries against k* quantum ones — the
     // quadratic speedup the lab exists to show. Queries means oracle calls,
     // as the glossary defines it; diffusion is counted separately.
     const classical = (await page.locator('#race-classical-stats').textContent()) ?? '';
@@ -618,6 +618,7 @@ test('the race bars honour the axis the caption claims, at every n', async ({ pa
   await page.emulateMedia({ reducedMotion: 'reduce' }); // take the settled path
   await page.goto('.');
 
+  await expect(page.locator('.race-axis-note')).toContainText('chance of measuring the target in one run');
   const MIN_VISIBLE = 0.015; // the floor the panel is allowed to draw at
 
   for (let n = 2; n <= 20; n += 1) {
@@ -647,7 +648,7 @@ test('the race bars honour the axis the caption claims, at every n', async ({ pa
       ).toHaveClass(/below-scale/);
     } else {
       // Drawn to scale — so the width IS the query ratio, as the caption says.
-      expect(quantum, `n=${n}: bar width must equal k*/(N/2) = ${trueShare}`)
+      expect(quantum, `n=${n}: bar width must equal k*/((N+1)/2) = ${trueShare}`)
         .toBeCloseTo(trueShare, 3);
       expect(trueShare, `n=${n}: drawn to scale, so it must be above the floor`)
         .toBeGreaterThanOrEqual(MIN_VISIBLE);
@@ -684,7 +685,7 @@ test('the race status quotes the oracle-query count, not the reflection count', 
 
 test('the speedup table states which quantities it compares', async ({ page }) => {
   await page.goto('.');
-  // The table is N/√N; the race is (N/2)/k*. They differ by π/2, so the page
+  // The table is N/√N; the race is ((N+1)/2)/k*. Their ratio approaches π/2, so the page
   // must not leave two figures for "the speedup" unreconciled on one screen.
   const notes = (await page.locator('#panel-b').textContent()) ?? '';
   expect(notes).toMatch(/N ÷ √N/);
