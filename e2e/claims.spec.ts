@@ -618,7 +618,7 @@ test('the race bars honour the axis the caption claims, at every n', async ({ pa
   await page.emulateMedia({ reducedMotion: 'reduce' }); // take the settled path
   await page.goto('.');
 
-  await expect(page.locator('.race-axis-note')).toContainText('chance of measuring the target in one run');
+  await expect(page.locator('.race-axis-note').filter({ hasText: 'Both bars share one timeline' })).toContainText('chance of measuring the target in one run');
   const MIN_VISIBLE = 0.015; // the floor the panel is allowed to draw at
 
   for (let n = 2; n <= 20; n += 1) {
