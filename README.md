@@ -2,11 +2,11 @@
 
 ## What It Is
 
-Grover's algorithm (Lov Grover, 1996) is a quantum search algorithm that finds a marked item in an unstructured search space of N items using O(√N) queries — a quadratic speedup over classical brute force. This demo classically simulates the complete amplitude amplification process with exact mathematical formulas: oracle phase kickback, inversion-about-mean diffusion, and probability oscillation including overshoot past optimal iterations. The security model is symmetric cryptography — Grover is the quantum threat to AES, SHA, and HMAC that Shor's algorithm does not touch. Grover's speedup is provably optimal (BBBV lower bound); no quantum algorithm can search faster than O(√N).
+Grover's algorithm (Lov Grover, 1996) is a quantum search algorithm that finds a marked item in an unstructured search space of N items using O(√N) queries — a quadratic speedup over classical brute force. This demo classically simulates the complete amplitude amplification process with exact mathematical formulas: oracle phase kickback, inversion-about-mean diffusion, and probability oscillation including overshoot past optimal iterations. The security model is symmetric cryptography — Grover is the quantum threat to AES, SHA, and HMAC that Shor's algorithm does not touch. In unstructured black-box search with one marked item, bounded-error quantum algorithms require Ω(√N) oracle queries. Grover matches that bound.
 
 ## When to Use It
 
-- **Understanding why AES-256 retains strong post-quantum security margins while AES-128 is weakened** — Under idealized Grover assumptions, effective key length is halved: AES-128 drops to ~2^64 effective operations (potentially feasible), while AES-256 drops to ~2^128 (still strong). In practice, circuit depth makes the real cost far higher than these headline figures.
+- **Understanding why AES-256 retains strong post-quantum security margins while AES-128 is weakened** — Under idealized Grover assumptions, effective key length is halved: AES-128 drops to about 2^64 idealized oracle queries, while AES-256 takes about 2^128. In practice, circuit depth makes the real cost far higher than these headline figures.
 - **Visualizing Grover as a rotation** — Grover's algorithm *is* two reflections per step (oracle + diffusion) that compose into a rotation by 2θ in the plane spanned by |target⟩ and the wrong answers. The demo shows the state vector rotating on the unit circle, so amplitude concentration and overshoot become geometric facts rather than formulas.
 - **Seeing the oracle and diffusion separately** — A "Show oracle + diffusion sub-steps" toggle walks one iteration as two distinct reflections: the oracle flips the target amplitude *negative* (visible as a downward bar), then diffusion inverts every amplitude about the mean (the gold mean line on the signed bar chart). The decomposition is exact — it agrees with the closed form sin((2k+1)θ) to floating-point precision.
 - **Teaching the overshoot phenomenon** — The probability curve and the rotation view together show why running more Grover iterations past k* = π/4·√N actually decreases success probability: the state vector rotates *past* the target axis.
@@ -27,7 +27,7 @@ You can deep-link a specific state with query parameters — e.g. `?steps=3` jum
 - **Assuming Grover parallelizes the depth away** — it gives at most a quadratic speedup, and splitting it across machines splits the √N benefit; you cannot brute-force the circuit depth down the way classical search parallelizes.
 - **Running too many iterations** — past k* = π/4·√N the state rotates past the target and success probability falls (overshoot); more iterations is not better.
 - **Applying it to the wrong primitive** — Grover threatens symmetric keys and hash preimages, not RSA/ECC/DH (that is Shor). Conflating the two misstates the risk.
-- **Treating O(√N) as beatable** — the BBBV bound proves no quantum search does better; assuming a future faster generic search is unfounded.
+- **Treating O(√N) as beatable** — the BBBV lower bound applies to unstructured black-box search. Structure in a particular problem can support a different algorithm.
 
 ## Real-World Usage
 
@@ -81,7 +81,7 @@ For classroom use, see the [teaching guide](docs/TEACHING.md) — lesson plans (
 ## Sources
 
 1. **Grover, L. K.** (1996). "A fast quantum mechanical algorithm for database search." *Proceedings of the 28th Annual ACM Symposium on Theory of Computing*, pp. 212–219.
-2. **Bennett, C. H., Bernstein, E., Brassard, G., & Vazirani, U.** (1997). "Strengths and weaknesses of quantum computing." *SIAM Journal on Computing*, 26(5), pp. 1510–1523. (BBBV lower bound — proves Grover's O(√N) is optimal.)
+2. **Bennett, C. H., Bernstein, E., Brassard, G., & Vazirani, U.** (1997). "Strengths and weaknesses of quantum computing." *SIAM Journal on Computing*, 26(5), pp. 1510–1523. (BBBV lower bound — establishes the Ω(√N) query lower bound for unstructured black-box search.)
 3. **Grassl, M., Langenberg, B., Roetteler, M., & Steinwandt, R.** (2016). "Applying Grover's algorithm to AES: Quantum resource estimates." *Post-Quantum Cryptography (PQCrypto 2016)*, LNCS 9606, pp. 29–43. (Source for AES circuit depth and qubit cost estimates.)
 4. **NIST**. [PQC FAQ](https://csrc.nist.gov/projects/post-quantum-cryptography/faqs), AES key-length question. Current applications may continue AES-128/192/256; query counts do not establish practical attack costs.
 5. **NSA**. [CNSA/CSfC FAQ](https://www.nsa.gov/Resources/Commercial-Solutions-for-Classified-Program/faq/) and [CNSA 2.0 announcement](https://www.nsa.gov/Press-Room/News-Highlights/Article/Article/3148990/nsa-releases-future-quantum-resistant-qr-algorithm-requirements-for-national-se/). AES-256 selection and national-security scope, distinct from general NIST guidance.
